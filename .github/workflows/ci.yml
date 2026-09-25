@@ -1,0 +1,36 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, macos-latest, ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      # The ~1.1 GB per-cycle CPU suite only runs on Linux; the other jobs skip those tests.
+      - name: Cache Harte 6502 tests
+        if: runner.os == 'Linux'
+        uses: actions/cache@v4
+        with:
+          path: test-data/harte
+          key: harte-6502-v1-${{ hashFiles('scripts/fetch-test-data.sh') }}
+
+      - name: Fetch Harte 6502 tests
+        if: runner.os == 'Linux'
+        run: ./scripts/fetch-test-data.sh
+
+      - run: dotnet build Kimulator.slnx -c Release
+
+      - run: dotnet test tests/Kimulator.Tests -c Release --no-build

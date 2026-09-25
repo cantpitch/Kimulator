@@ -1,0 +1,10 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Kimulator.App/Kimulator.App.csproj" />
+    <Project Path="src/Kimulator.Core/Kimulator.Core.csproj" />
+    <Project Path="src/Kimulator.Kim1/Kimulator.Kim1.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Kimulator.Tests/Kimulator.Tests.csproj" />
+  </Folder>
+</Solution>
