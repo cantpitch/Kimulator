@@ -11,6 +11,7 @@ using Kimulator.App.Board;
 using Kimulator.App.Debugging;
 using Kimulator.App.Dialogs;
 using Kimulator.App.Editor;
+using Kimulator.App.Expansion;
 using Kimulator.App.Terminal;
 using Kimulator.Kim1;
 
@@ -30,6 +31,7 @@ public partial class MainWindow : Window
     private DebuggerWindow? _debugger;
     private AssemblerWindow? _assembler;
     private CassetteWindow? _cassette;
+    private ExpansionWindow? _expansion;
     private long _lastStatusCycles;
     private DateTime _lastStatusTime = DateTime.UtcNow;
     private ushort _lastSaveStart = 0x0200, _lastSaveEnd = 0x03FF, _lastBinaryAddress = 0x0200;
@@ -79,9 +81,12 @@ public partial class MainWindow : Window
             Opened += (_, _) => ShowAssembler();
         if (_settings.CassetteOpen || Environment.GetCommandLineArgs().Contains("--cassette"))
             Opened += (_, _) => ShowCassette();
+        if (Environment.GetCommandLineArgs().Contains("--expansion"))
+            Opened += (_, _) => ShowExpansion();
         Opened += (_, _) => DispatcherTimer.RunOnce(() =>
         {
-            if (_session.Audio.Error is { } error) ShowStatus($"Sound is unavailable: {error}");
+            if (_session.ExpansionError is { } cardError) ShowStatus(cardError);
+            else if (_session.Audio.Error is { } error) ShowStatus($"Sound is unavailable: {error}");
         }, TimeSpan.FromSeconds(1));
     }
 
@@ -91,6 +96,7 @@ public partial class MainWindow : Window
         _settings.AssemblerOpen = _assembler is not null;
         _settings.CassetteOpen = _cassette is not null;
         _cassette?.Close();
+        _expansion?.Close();
         // Close child windows first: the assembler stores unsaved text in the settings as it closes.
         _terminal?.Close();
         _debugger?.Close();
@@ -469,6 +475,21 @@ public partial class MainWindow : Window
     private void OnShowAssembler(object? sender, RoutedEventArgs e) => ShowAssembler();
 
     private void OnShowCassette(object? sender, RoutedEventArgs e) => ShowCassette();
+
+    private void OnShowExpansion(object? sender, RoutedEventArgs e) => ShowExpansion();
+
+    private void ShowExpansion()
+    {
+        if (_expansion is not null)
+        {
+            _expansion.Activate();
+            return;
+        }
+
+        _expansion = new ExpansionWindow(_session, _settings);
+        _expansion.Closed += (_, _) => _expansion = null;
+        _expansion.Show(this);
+    }
 
     private void ShowCassette()
     {

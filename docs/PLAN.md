@@ -36,7 +36,7 @@
 | 5 | Debugger window: registers, disassembly with monitor symbols, memory hex view/edit, breakpoints/watchpoints, step/over/out/run-to, bus-cycle trace and instruction history | ✅ (stepping is per instruction; cycle detail via the bus trace) |
 | 6 | Text editor (AvaloniaEdit) + built-in ca65/64tass-style assembler that assembles straight into memory; source-level breakpoints and PC highlighting | ✅ |
 | 7 | Cassette: WAV record/playback through PB7 with an LM565 PLL model; speaker audio (OpenAL Soft) from tape out or application port | ✅ |
-| 8 | Expansion cards with their own board images: KIM-4 motherboard, KIM-2/KIM-3 RAM, KIM-5 ROM, KIM-6 prototyping; card rack view | |
+| 8 | Expansion cards with their own photos and clickable DIP switches: KIM-4 motherboard (manual decoding), KIM-2/KIM-3 RAM (manual switch tables), KIM-5 ROM with the Resident Assembler/Editor; memory map and conflict checks; card RAM in save states | ✅ (KIM-6 prototyping card not done: no photo yet) |
 
 ## Remaining polish
 

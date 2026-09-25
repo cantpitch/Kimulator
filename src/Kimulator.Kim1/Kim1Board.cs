@@ -3,6 +3,7 @@ using Kimulator.Core.Bus;
 using Kimulator.Core.Cpu;
 using Kimulator.Core.Debugging;
 using Kimulator.Core.Machine;
+using Kimulator.Kim1.Cards;
 
 namespace Kimulator.Kim1;
 
@@ -122,6 +123,16 @@ public sealed class Kim1Board : ICpuBus, IMachine
     public void AddCard(IExpansionCard card) => _cards.Add(card);
 
     public void RemoveCard(IExpansionCard card) => _cards.Remove(card);
+
+    /// <summary>Replaces all installed cards (e.g. from an <see cref="ExpansionConfig"/>).</summary>
+    public void SetCards(IEnumerable<IExpansionCard> cards)
+    {
+        _cards.Clear();
+        _cards.AddRange(cards);
+    }
+
+    /// <summary>A ROM image shipped with the emulator, e.g. "6540-007" (KIM-5 Resident Assembler/Editor).</summary>
+    public static byte[] LoadBuiltInRom(string name) => LoadRom($"kim5.{name}.bin");
 
     /// <summary>Power-on: clears RAM (real 2102s come up random), resets all chips and the CPU.</summary>
     public void PowerOn(bool randomizeRam = false)
@@ -246,6 +257,8 @@ public sealed class Kim1Board : ICpuBus, IMachine
             if (card.TryRead(address, out byte v)) return v;
         }
 
+        if (!OnboardDecodeEnabled(address)) return 0xFF; // nothing answers (open bus)
+
         int a = address & 0x1FFF;
         return (a >> 10) switch
         {
@@ -326,7 +339,7 @@ public sealed class Kim1Board : ICpuBus, IMachine
     // ---------------------------------------------------------------- save states
 
     private const string StateMagic = "KIMSTATE";
-    private const int StateVersion = 1;
+    private const int StateVersion = 2;
 
     /// <summary>
     /// Saves the complete machine state (CPU, RAM, RRIOTs, switches). Call between instructions,
@@ -347,6 +360,14 @@ public sealed class Kim1Board : ICpuBus, IMachine
         Cpu.SaveState(writer);
         Riot002.SaveState(writer);
         Riot003.SaveState(writer);
+
+        // Version 2: expansion cards (names first, so a mismatched configuration is detected on load).
+        writer.Write(_cards.Count);
+        foreach (var card in _cards)
+        {
+            writer.Write(card.Name);
+            (card as KimCard)?.SaveState(writer);
+        }
     }
 
     public void LoadState(Stream stream)
@@ -355,7 +376,7 @@ public sealed class Kim1Board : ICpuBus, IMachine
         if (new string(reader.ReadChars(StateMagic.Length)) != StateMagic)
             throw new InvalidDataException("Not a Kimulator save state.");
         int version = reader.ReadInt32();
-        if (version != StateVersion)
+        if (version is < 1 or > StateVersion)
             throw new InvalidDataException($"Unsupported save state version {version}.");
 
         _cycles = reader.ReadInt64();
@@ -368,6 +389,19 @@ public sealed class Kim1Board : ICpuBus, IMachine
         Cpu.LoadState(reader);
         Riot002.LoadState(reader);
         Riot003.LoadState(reader);
+
+        if (version >= 2)
+        {
+            int count = reader.ReadInt32();
+            if (count != _cards.Count)
+                throw new InvalidDataException("This state was saved with different expansion cards installed.");
+            foreach (var card in _cards)
+            {
+                if (reader.ReadString() != card.Name)
+                    throw new InvalidDataException("This state was saved with different expansion cards installed.");
+                (card as KimCard)?.LoadState(reader);
+            }
+        }
 
         _pressedKeys = 0;
         _stopHeld = false;

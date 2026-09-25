@@ -12,6 +12,7 @@
     <EmbeddedResource Include="..\..\assets\roms\6530-002.bin" LogicalName="Kimulator.Kim1.Roms.6530-002.bin" />
     <EmbeddedResource Include="..\..\assets\roms\6530-003.bin" LogicalName="Kimulator.Kim1.Roms.6530-003.bin" />
     <EmbeddedResource Include="Symbols\kim1-monitor.sym" LogicalName="Kimulator.Kim1.Symbols.kim1-monitor.sym" />
+    <EmbeddedResource Include="..\..\assets\roms\kim5\*.bin" LogicalName="Kimulator.Kim1.Roms.kim5.%(Filename)%(Extension)" />
   </ItemGroup>
 
 </Project>

@@ -1,6 +1,7 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Kimulator.Kim1;
+using Kimulator.Kim1.Cards;
 
 namespace Kimulator.App;
 
@@ -47,6 +48,9 @@ public sealed class AppSettings
     public bool CassetteAutoStop { get; set; } = true;
 
     public bool CassetteOpen { get; set; }
+
+    /// <summary>Installed KIM system cards.</summary>
+    public ExpansionConfig Expansion { get; set; } = new();
 
     public static AppSettings Load()
     {

@@ -112,6 +112,29 @@ Details:
 toggle) or application port PA0/PB0. Audio goes through OpenAL Soft, which is bundled for Windows, macOS and
 Linux.
 
+## Expansion cards
+
+**Machine › Expansion cards…** installs KIM system cards. Each card is shown as a photo, and you set its
+address the way you would on the real card: click its DIP switches.
+
+| Card | What it does |
+|---|---|
+| KIM-4 motherboard | 6 slots. Takes over address decoding (KIM-4 manual §3.3): cards answer at `$0400`–`$13FF` and `$2000`–`$FFF7`, the KIM-1's 8K stops repeating, and `$FFF8`–`$FFFF` stay on the KIM-1 so the vectors still reach the monitor. |
+| KIM-2 | 4K RAM. Switches 1–4 = A15–A12 (MOS KIM-2/3 manual, Table 4). |
+| KIM-3 | 8K RAM. Switches 1–3 = A15–A13 (Table 5). |
+| KIM-5 | 8 sockets for 6540 2K ROMs in two banks (S1: U1–U4, S2: U5–U8). Ships with the Resident Assembler/Editor ROMs (6540-007/-008/-009) at `$E000`–`$F7FF`. |
+
+Without a KIM-4, one KIM-2 or KIM-3 can be cabled straight to the KIM-1. A memory map shows what answers where,
+and the window warns about the placements the MOS manuals caution against.
+
+To try the Resident Assembler/Editor:
+1. Install a KIM-4 with a KIM-3 at `$2000` and a KIM-5.
+2. Switch to TTY mode.
+3. Start `$F100`. It sets its I/O vectors to the monitor's TTY routines and asks `BASE=`.
+
+The KIM-5's bank/switch mapping is inferred from the board and the ROM addresses, because the KIM-5 manual
+isn't available.
+
 ## Test
 
 ```bash
@@ -126,8 +149,8 @@ The Harte tests skip themselves when the data is missing.
 | Project | Contents |
 |---|---|
 | `src/Kimulator.Core` | 6502 core, opcode table, `MachineRunner` (real-time emulation thread), assembler, debugger/disassembler/symbols, expansion-card contract, paper tape / Intel HEX / WAV formats, audio sampling, teletype text buffer |
-| `src/Kimulator.Kim1` | 6530 RRIOT, KIM-1 board, LED display model, bit-level TTY interface, cassette with PLL model, save states, embedded ROMs and monitor symbols |
-| `src/Kimulator.App` | Avalonia UI: board photo view, hotspot layout (`Assets/kim1-layout.json`), terminal, debugger, assembler and cassette windows, OpenAL audio, settings |
+| `src/Kimulator.Kim1` | 6530 RRIOT, KIM-1 board, KIM-2/3/4/5 cards, LED display model, bit-level TTY interface, cassette with PLL model, save states, embedded ROMs and monitor symbols |
+| `src/Kimulator.App` | Avalonia UI: board photo view, hotspot layout (`Assets/kim1-layout.json`), terminal, debugger, assembler, cassette and expansion windows, OpenAL audio, settings |
 | `tests/Kimulator.Tests` | CPU suites, interrupt timing, headless KIM-1 keypad and TTY monitor tests, file formats, save states, cassette round trips, debugger, disassembler and assembler |
 
 See [docs/PLAN.md](docs/PLAN.md) for the roadmap.
@@ -135,5 +158,7 @@ See [docs/PLAN.md](docs/PLAN.md) for the roadmap.
 ## Credits
 
 - KIM-1 ROM images: the public 6530-002/-003 dumps from [Hans Otten's KIM-1 pages](http://retro.hansotten.nl/6502-sbc/kim-1-manuals-and-software/kim_1-roms/).
+- KIM-5 Resident Assembler/Editor ROM dumps (6540-007/-008/-009) and the KIM-2/3/4 manuals, also from
+  [Hans Otten's KIM system products pages](http://retro.hansotten.nl/6502-sbc/kim-1-manuals-and-software/kim-system-products/).
 - [SingleStepTests/65x02](https://github.com/SingleStepTests/65x02) (MIT) and
   [Klaus Dormann's 6502 functional tests](https://github.com/Klaus2m5/6502_65C02_functional_tests) (GPL-3.0, the test binary only).

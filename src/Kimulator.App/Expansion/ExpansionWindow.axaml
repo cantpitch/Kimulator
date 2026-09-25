@@ -1,0 +1,66 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:ex="using:Kimulator.App.Expansion"
+        x:Class="Kimulator.App.Expansion.ExpansionWindow"
+        Title="Expansion cards"
+        Width="1180" Height="820"
+        Background="#161616">
+    <Window.Styles>
+        <Style Selector="TextBlock.hint">
+            <Setter Property="Foreground" Value="#9A9A9A" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="TextWrapping" Value="Wrap" />
+        </Style>
+        <Style Selector="TextBlock.heading">
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Margin" Value="0,6,0,0" />
+        </Style>
+    </Window.Styles>
+
+    <DockPanel>
+        <Border DockPanel.Dock="Bottom" Background="#101010" Padding="12,8">
+            <DockPanel>
+                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="8">
+                    <Button Content="Revert" Click="OnRevert" />
+                    <Button x:Name="ApplyButton" Content="Apply" Click="OnApply" IsDefault="True" MinWidth="90" HorizontalContentAlignment="Center" />
+                </StackPanel>
+                <TextBlock x:Name="StatusText" VerticalAlignment="Center" Foreground="#C8C8C8" TextWrapping="Wrap" />
+            </DockPanel>
+        </Border>
+
+        <Grid ColumnDefinitions="440,*" Margin="12">
+            <!-- System: KIM-4, slots, memory map -->
+            <ScrollViewer Grid.Column="0" Margin="0,0,12,0">
+                <StackPanel Spacing="8">
+                    <CheckBox x:Name="Kim4Box" IsCheckedChanged="OnKim4Changed">
+                        <TextBlock Text="KIM-4 motherboard (6 slots, full address decoding)" TextWrapping="Wrap" />
+                    </CheckBox>
+                    <Button x:Name="Kim4Picture" Padding="0" Background="Transparent" BorderThickness="0" Click="OnShowKim4" ToolTip.Tip="Show the KIM-4">
+                        <Image x:Name="SystemImage" Height="150" Stretch="Uniform" />
+                    </Button>
+                    <TextBlock x:Name="SystemHint" Classes="hint" />
+
+                    <TextBlock Classes="heading" Text="Slots" />
+                    <ListBox x:Name="SlotList" SelectionChanged="OnSlotSelected" Background="#141414" />
+
+                    <TextBlock Classes="heading" Text="Memory map" />
+                    <ex:MemoryMapView x:Name="MapView" />
+                    <TextBlock x:Name="ProblemText" Foreground="#F08A5D" TextWrapping="Wrap" FontSize="12" />
+                    <TextBlock x:Name="RegionText" FontFamily="Consolas, Menlo, DejaVu Sans Mono, monospace" FontSize="12" Foreground="#B0B0B0" />
+                </StackPanel>
+            </ScrollViewer>
+
+            <!-- Selected slot -->
+            <DockPanel Grid.Column="1">
+                <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="10" Margin="0,0,0,8">
+                    <TextBlock x:Name="SlotTitle" FontSize="18" FontWeight="SemiBold" VerticalAlignment="Center" />
+                    <ComboBox x:Name="CardTypeBox" Width="330" SelectionChanged="OnCardTypeChanged" />
+                </StackPanel>
+                <TextBlock x:Name="CardAddressText" DockPanel.Dock="Top" FontSize="15" Foreground="#E0C050" Margin="0,0,0,6" />
+                <TextBlock x:Name="CardHint" DockPanel.Dock="Top" Classes="hint" Margin="0,0,0,8" />
+                <StackPanel x:Name="SocketPanel" DockPanel.Dock="Bottom" Spacing="4" Margin="0,8,0,0" />
+                <ex:CardView x:Name="Card" />
+            </DockPanel>
+        </Grid>
+    </DockPanel>
+</Window>

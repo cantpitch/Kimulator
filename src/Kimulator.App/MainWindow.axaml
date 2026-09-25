@@ -25,6 +25,8 @@
                 <MenuItem x:Name="TtyModeMenu" Header="_TTY mode (teletype jumper)" ToggleType="CheckBox" Click="OnToggleTtyMode" />
                 <MenuItem x:Name="BaudMenu" Header="_Baud rate" />
                 <Separator />
+                <MenuItem Header="E_xpansion cards…" Click="OnShowExpansion" />
+                <Separator />
                 <MenuItem Header="_Power cycle" Click="OnPowerCycle" />
                 <MenuItem x:Name="PresetVectorsMenu" Header="Preset NMI/IRQ vectors at power-on" ToggleType="CheckBox" Click="OnTogglePresetVectors" />
                 <MenuItem x:Name="AutoCalibrateMenu" Header="Send RUBOUT after reset in TTY mode" ToggleType="CheckBox" Click="OnToggleAutoCalibrate" />

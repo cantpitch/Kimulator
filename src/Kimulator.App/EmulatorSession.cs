@@ -8,6 +8,7 @@ using Kimulator.Core.Formats;
 using Kimulator.Core.Machine;
 using Kimulator.Core.Terminal;
 using Kimulator.Kim1;
+using Kimulator.Kim1.Cards;
 
 namespace Kimulator.App;
 
@@ -38,6 +39,15 @@ public sealed class EmulatorSession : IDisposable
         Board.Speaker.Volume = (float)settings.Volume;
         Board.Cassette.AutoStopSilenceSeconds = settings.CassetteAutoStop ? 2.0 : 0;
         Audio = new AudioOutput(Board.Speaker.Output, Board.Speaker.SampleRate);
+        try
+        {
+            Board.SetCards(settings.Expansion.Build(File.ReadAllBytes));
+            Expansion = settings.Expansion.Clone();
+        }
+        catch (Exception ex) when (ex is IOException or ArgumentException or UnauthorizedAccessException)
+        {
+            ExpansionError = $"The expansion cards could not be installed: {ex.Message}";
+        }
         AutoCalibrateTty = settings.AutoCalibrateTty;
         Runner = new MachineRunner(Board);
         Runner.Stopped += stop => Dispatcher.UIThread.Post(() =>
@@ -77,6 +87,24 @@ public sealed class EmulatorSession : IDisposable
     public bool TtyMode { get; private set; }
 
     public DisplayFrame Display => Board.Display.Latest;
+
+    /// <summary>The installed cards (UI-side copy of what the board runs with).</summary>
+    public ExpansionConfig Expansion { get; private set; } = new();
+
+    /// <summary>Set when the saved card configuration could not be installed at startup.</summary>
+    public string? ExpansionError { get; }
+
+    /// <summary>Builds the cards (reading any ROM files) and installs them on the board.</summary>
+    public async Task ApplyExpansionAsync(ExpansionConfig config)
+    {
+        var cards = config.Build(File.ReadAllBytes);
+        await Runner.InvokeAsync(() =>
+        {
+            Board.SetCards(cards);
+            return true;
+        });
+        Expansion = config.Clone();
+    }
 
     /// <summary>Raised on the UI thread after <see cref="PumpTerminal"/> added text to <see cref="Transcript"/>.</summary>
     public event Action? TranscriptChanged;
