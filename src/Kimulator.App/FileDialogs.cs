@@ -12,6 +12,7 @@ public static class FileDialogs
     public static readonly FilePickerFileType SaveState = new("Kimulator save state") { Patterns = ["*.kimstate"] };
     public static readonly FilePickerFileType Text = new("Text") { Patterns = ["*.txt"] };
     public static readonly FilePickerFileType All = new("All files") { Patterns = ["*"] };
+    public static readonly FilePickerFileType Assembly = new("6502 assembly") { Patterns = ["*.asm", "*.s", "*.a65", "*.inc"] };
 
     public static readonly FilePickerFileType Programs = new("Programs (.ptp, .hex, .bin)")
     {
@@ -22,6 +23,42 @@ public static class FileDialogs
     public static IReadOnlyList<FilePickerFileType> PaperTapeTypes { get; } = [PaperTape, All];
     public static IReadOnlyList<FilePickerFileType> TextTypes { get; } = [Text, All];
     public static IReadOnlyList<FilePickerFileType> SaveStateTypes { get; } = [SaveState, All];
+    public static IReadOnlyList<FilePickerFileType> AssemblyTypes { get; } = [Assembly, All];
+
+    /// <summary>Like <see cref="OpenAsync"/> but also returns the local path (needed to save back to the same file).</summary>
+    public static async Task<(string Path, byte[] Content)?> OpenPathAsync(
+        Window owner, AppSettings settings, string title, IReadOnlyList<FilePickerFileType> types)
+    {
+        var files = await owner.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
+        {
+            Title = title,
+            AllowMultiple = false,
+            FileTypeFilter = types,
+            SuggestedStartLocation = await StartFolder(owner, settings),
+        });
+        if (files.Count == 0 || files[0].TryGetLocalPath() is not { } path) return null;
+        Remember(settings, files[0]);
+        return (path, await File.ReadAllBytesAsync(path));
+    }
+
+    /// <summary>Asks for a destination, writes <paramref name="content"/> and returns the local path.</summary>
+    public static async Task<string?> SavePathAsync(
+        Window owner, AppSettings settings, string title, string suggestedName,
+        IReadOnlyList<FilePickerFileType> types, byte[] content)
+    {
+        var file = await owner.StorageProvider.SaveFilePickerAsync(new FilePickerSaveOptions
+        {
+            Title = title,
+            SuggestedFileName = suggestedName,
+            FileTypeChoices = types,
+            ShowOverwritePrompt = true,
+            SuggestedStartLocation = await StartFolder(owner, settings),
+        });
+        if (file?.TryGetLocalPath() is not { } path) return null;
+        Remember(settings, file);
+        await File.WriteAllBytesAsync(path, content);
+        return path;
+    }
 
     public static async Task<(string Name, byte[] Content)?> OpenAsync(
         Window owner, AppSettings settings, string title, IReadOnlyList<FilePickerFileType> types)

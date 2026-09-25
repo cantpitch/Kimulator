@@ -21,6 +21,7 @@ public static class KeyboardMap
         Ctrl+1 / Ctrl+2  full board / compact view
         Ctrl+T           terminal (TTY) window
         Ctrl+D           debugger
+        Ctrl+E           assembler / editor
         Ctrl+O           load program (.ptp, .hex, .bin)
         Ctrl+M           save memory range
         Ctrl+S / Ctrl+L  save / load state

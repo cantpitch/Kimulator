@@ -21,7 +21,7 @@ public sealed record BreakpointItem(int Id, string Description, bool Enabled);
 public partial class DebuggerWindow : Window
 {
     private readonly EmulatorSession _session;
-    private readonly SymbolTable _symbols = Kim1Board.MonitorSymbols;
+    private SymbolTable _symbols = Kim1Board.MonitorSymbols;
     private readonly DispatcherTimer? _liveTimer;
     private DebugSnapshot? _snapshot;
     private bool _refreshing;
@@ -59,6 +59,8 @@ public partial class DebuggerWindow : Window
         if (session is null) return;
         session.Stopped += OnStopped;
         session.Resumed += OnResumed;
+        session.SymbolsChanged += OnSymbolsChanged;
+        OnSymbolsChanged();
 
         // While running, keep registers and memory roughly live.
         _liveTimer = new DispatcherTimer(TimeSpan.FromMilliseconds(250), DispatcherPriority.Background, async (_, _) =>
@@ -82,6 +84,7 @@ public partial class DebuggerWindow : Window
         {
             _session.Stopped -= OnStopped;
             _session.Resumed -= OnResumed;
+            _session.SymbolsChanged -= OnSymbolsChanged;
         }
 
         base.OnClosed(e);
@@ -95,6 +98,13 @@ public partial class DebuggerWindow : Window
     }
 
     private void OnResumed() => UpdateRunState();
+
+    private void OnSymbolsChanged()
+    {
+        _symbols = _session.Symbols;
+        Disassembly.Symbols = _symbols;
+        Disassembly.InvalidateVisual();
+    }
 
     // ---------------------------------------------------------------- refresh
 

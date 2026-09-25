@@ -29,6 +29,14 @@ public sealed class AppSettings
     public bool TerminalOpen { get; set; }
     public string? LastDirectory { get; set; }
 
+    /// <summary>File open in the assembler window.</summary>
+    public string? AssemblerFile { get; set; }
+
+    /// <summary>Unsaved assembler text, kept so closing the window never loses work.</summary>
+    public string? AssemblerScratch { get; set; }
+
+    public bool AssemblerOpen { get; set; }
+
     public static AppSettings Load()
     {
         try

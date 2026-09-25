@@ -1,5 +1,6 @@
 ; KIM-1 monitor (6530-002/-003) symbols, from the assembled monitor listing.
 ; Format: NAME HEXADDRESS
+; SCANDS (display without reloading INH) is unlabeled in the listing but widely used by KIM programs.
 PCL 00EF
 PCH 00F0
 PREG 00F1
@@ -167,6 +168,7 @@ AK 1EFE
 ONEKEY 1F02
 AK1 1F04
 SCAND 1F19
+SCANDS 1F1F
 SCAND1 1F28
 CONVD 1F48
 CONVD1 1F5B

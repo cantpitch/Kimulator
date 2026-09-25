@@ -42,6 +42,7 @@
                 <Separator />
                 <MenuItem Header="_Terminal (TTY)" InputGesture="Ctrl+T" Click="OnShowTerminal" />
                 <MenuItem Header="_Debugger" InputGesture="Ctrl+D" Click="OnShowDebugger" />
+                <MenuItem Header="_Assembler" InputGesture="Ctrl+E" Click="OnShowAssembler" />
             </MenuItem>
             <MenuItem Header="_Help">
                 <MenuItem Header="_Keyboard shortcuts" Click="OnShowKeys" />

@@ -84,6 +84,33 @@ public sealed class EmulatorSession : IDisposable
 
     public bool IsStopped => LastStop is not null;
 
+    /// <summary>Labels shown by the debugger: the loaded program's (if any) plus the monitor's.</summary>
+    public SymbolTable Symbols { get; private set; } = Kim1Board.MonitorSymbols;
+
+    /// <summary>Raised on the UI thread when <see cref="Symbols"/> changes.</summary>
+    public event Action? SymbolsChanged;
+
+    /// <summary>Makes a program's labels visible in the debugger (program labels win over monitor labels).</summary>
+    public void SetProgramSymbols(SymbolTable? program)
+    {
+        var combined = new SymbolTable();
+        if (program is not null) combined.Merge(program);
+        combined.Merge(Kim1Board.MonitorSymbols);
+        Symbols = combined;
+        SymbolsChanged?.Invoke();
+    }
+
+    /// <summary>Starts executing at <paramref name="address"/> (resuming if stopped).</summary>
+    public async Task RunFromAsync(ushort address)
+    {
+        await Runner.InvokeAsync(() =>
+        {
+            Board.Cpu.PC = address;
+            return true;
+        });
+        if (IsStopped) Runner.Resume();
+    }
+
     // ---------------------------------------------------------------- debugging
 
     public Task<DebugSnapshot> CaptureAsync() => Runner.InvokeAsync(() =>
@@ -199,11 +226,14 @@ public sealed class EmulatorSession : IDisposable
         if (any) TranscriptChanged?.Invoke();
     }
 
-    /// <summary>Stores segments into memory and opens the first one. Returns bytes that could not be stored.</summary>
-    public Task<int> LoadProgramAsync(IReadOnlyList<MemorySegment> segments) => Runner.InvokeAsync(() =>
+    /// <summary>
+    /// Stores segments into memory and makes <paramref name="entry"/> (default: the first segment) the
+    /// monitor's open cell. Returns bytes that could not be stored.
+    /// </summary>
+    public Task<int> LoadProgramAsync(IReadOnlyList<MemorySegment> segments, ushort? entry = null) => Runner.InvokeAsync(() =>
     {
         int skipped = segments.Sum(s => Board.LoadMemory(s.Address, s.Data));
-        if (segments.Count > 0) Board.SetOpenCell(segments[0].Address);
+        if ((entry ?? segments.FirstOrDefault()?.Address) is { } open) Board.SetOpenCell(open);
         return skipped;
     });
 

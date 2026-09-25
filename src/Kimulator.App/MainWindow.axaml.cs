@@ -9,6 +9,7 @@ using Avalonia.Threading;
 using Kimulator.App.Board;
 using Kimulator.App.Debugging;
 using Kimulator.App.Dialogs;
+using Kimulator.App.Editor;
 using Kimulator.App.Terminal;
 using Kimulator.Kim1;
 
@@ -26,6 +27,7 @@ public partial class MainWindow : Window
     private readonly HashSet<Key> _heldKeys = [];
     private TerminalWindow? _terminal;
     private DebuggerWindow? _debugger;
+    private AssemblerWindow? _assembler;
     private long _lastStatusCycles;
     private DateTime _lastStatusTime = DateTime.UtcNow;
     private ushort _lastSaveStart = 0x0200, _lastSaveEnd = 0x03FF, _lastBinaryAddress = 0x0200;
@@ -71,11 +73,18 @@ public partial class MainWindow : Window
             Opened += (_, _) => ShowTerminal();
         if (Environment.GetCommandLineArgs().Contains("--debugger"))
             Opened += (_, _) => ShowDebugger();
+        if (_settings.AssemblerOpen || Environment.GetCommandLineArgs().Contains("--assembler"))
+            Opened += (_, _) => ShowAssembler();
     }
 
     protected override void OnClosing(WindowClosingEventArgs e)
     {
         _settings.TerminalOpen = _terminal is not null;
+        _settings.AssemblerOpen = _assembler is not null;
+        // Close child windows first: the assembler stores unsaved text in the settings as it closes.
+        _terminal?.Close();
+        _debugger?.Close();
+        _assembler?.Close();
         if (WindowState == WindowState.Normal)
         {
             _settings.WindowWidth = Width;
@@ -85,8 +94,6 @@ public partial class MainWindow : Window
         }
 
         _settings.Save();
-        _terminal?.Close();
-        _debugger?.Close();
         base.OnClosing(e);
     }
 
@@ -184,6 +191,7 @@ public partial class MainWindow : Window
                 case Key.L: OnLoadState(null, e); break;
                 case Key.T: ShowTerminal(); break;
                 case Key.D: ShowDebugger(); break;
+                case Key.E: ShowAssembler(); break;
                 default: e.Handled = false; break;
             }
 
@@ -439,6 +447,21 @@ public partial class MainWindow : Window
     }
 
     private void OnShowDebugger(object? sender, RoutedEventArgs e) => ShowDebugger();
+
+    private void OnShowAssembler(object? sender, RoutedEventArgs e) => ShowAssembler();
+
+    private void ShowAssembler()
+    {
+        if (_assembler is not null)
+        {
+            _assembler.Activate();
+            return;
+        }
+
+        _assembler = new AssemblerWindow(_session, _settings);
+        _assembler.Closed += (_, _) => _assembler = null;
+        _assembler.Show(this);
+    }
 
     private void ShowDebugger()
     {

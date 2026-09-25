@@ -32,6 +32,7 @@ Add `-- --compact` to start with only the display and keypad.
 | Ctrl+S / Ctrl+L, F6 / F7 | save / load state, quick save / quick load |
 | Ctrl+T | terminal (TTY) window |
 | Ctrl+D | debugger |
+| Ctrl+E | assembler / editor |
 | Ctrl+1 / Ctrl+2 | full board / compact view |
 
 By default, power-on points the NMI and IRQ vectors (`$17FA`, `$17FE`) at the monitor (`$1C00`) so ST, SST
@@ -69,6 +70,33 @@ baud rate are saved in `%APPDATA%\Kimulator` on Windows or `~/.config/Kimulator`
 Stepping works one instruction at a time. For cycle-level detail, use the bus trace. When a breakpoint hits, the
 whole machine stops and the LED display freezes on its last frame.
 
+## Assembler
+
+**View › Assembler** (Ctrl+E) opens an editor with syntax highlighting and a built-in 6502 assembler. It uses
+ca65/64tass-style syntax:
+
+```asm
+        .org $0200              ; or  * = $0200
+COUNT   = 10                    ; constants
+start:  ldx #COUNT              ; 'start' (if defined) is where Load & run begins
+@loop:  dex                     ; @local labels are scoped to the previous label
+        bne @loop
+:       jsr SCANDS              ; anonymous labels:  :-  :+  (KIM monitor labels are predefined)
+        lda #<msg               ; < low byte, > high byte, * current address
+        jmp :-
+msg:    .byte "HI", $0D, 0      ; .byte .word .dbyt .res .text .asciiz .align .end
+```
+
+Details:
+- Symbols are case-insensitive. Zero-page addressing is used automatically when an operand is known to be below
+  `$100`; `a:` and `z:` force absolute or zero page.
+- Undocumented opcodes (LAX, SAX, DCP, ISC, …) are accepted.
+- `.res` without a fill value leaves memory untouched.
+- Editor keys: F7 assembles, F8 loads into RAM (the start becomes the open cell, so GO runs it), F5 loads and
+  runs, and F9 sets a breakpoint on the caret's line.
+- The debugger shows your program's labels, and the editor highlights the current line when execution stops.
+- Unsaved text is kept when you close the window.
+
 ## Test
 
 ```bash
@@ -82,10 +110,10 @@ The Harte tests skip themselves when the data is missing.
 
 | Project | Contents |
 |---|---|
-| `src/Kimulator.Core` | 6502 core, opcode table, `MachineRunner` (real-time emulation thread), debugger/disassembler/symbols, expansion-card contract, paper tape / Intel HEX formats, teletype text buffer |
+| `src/Kimulator.Core` | 6502 core, opcode table, `MachineRunner` (real-time emulation thread), assembler, debugger/disassembler/symbols, expansion-card contract, paper tape / Intel HEX formats, teletype text buffer |
 | `src/Kimulator.Kim1` | 6530 RRIOT, KIM-1 board, LED display model, bit-level TTY interface, save states, embedded ROMs and monitor symbols |
-| `src/Kimulator.App` | Avalonia UI: board photo view, hotspot layout (`Assets/kim1-layout.json`), terminal and debugger windows, settings |
-| `tests/Kimulator.Tests` | CPU suites, interrupt timing, headless KIM-1 keypad and TTY monitor tests, file formats, save states, debugger and disassembler |
+| `src/Kimulator.App` | Avalonia UI: board photo view, hotspot layout (`Assets/kim1-layout.json`), terminal, debugger and assembler windows, settings |
+| `tests/Kimulator.Tests` | CPU suites, interrupt timing, headless KIM-1 keypad and TTY monitor tests, file formats, save states, debugger, disassembler and assembler |
 
 See [docs/PLAN.md](docs/PLAN.md) for the roadmap.
 

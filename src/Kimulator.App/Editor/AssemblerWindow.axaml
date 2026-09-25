@@ -1,0 +1,72 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:ae="https://github.com/avaloniaui/avaloniaedit"
+        xmlns:ed="using:Kimulator.App.Editor"
+        x:Class="Kimulator.App.Editor.AssemblerWindow"
+        Title="KIM-1 Assembler"
+        Width="980" Height="780"
+        Background="#161616">
+    <Window.Styles>
+        <Style Selector="Button.tool">
+            <Setter Property="Padding" Value="10,4" />
+        </Style>
+        <Style Selector="TabItem">
+            <Setter Property="FontSize" Value="15" />
+            <Setter Property="MinHeight" Value="34" />
+            <Setter Property="Padding" Value="12,4" />
+        </Style>
+        <Style Selector="TextBox.mono">
+            <Setter Property="FontFamily" Value="Consolas, Menlo, DejaVu Sans Mono, monospace" />
+            <Setter Property="FontSize" Value="13" />
+        </Style>
+    </Window.Styles>
+
+    <Grid RowDefinitions="Auto,*,4,210,Auto">
+        <Border Grid.Row="0" Background="#1E1E1E" Padding="8,6">
+            <StackPanel Orientation="Horizontal" Spacing="6">
+                <Button Classes="tool" Content="New" Click="OnNew" ToolTip.Tip="Ctrl+N" />
+                <Button Classes="tool" Content="Open…" Click="OnOpen" ToolTip.Tip="Ctrl+O" />
+                <Button Classes="tool" Content="Save" Click="OnSave" ToolTip.Tip="Ctrl+S" />
+                <Button Classes="tool" Content="Save as…" Click="OnSaveAs" />
+                <Border Width="12" />
+                <Button Classes="tool" Content="Assemble" Click="OnAssemble" ToolTip.Tip="Check the program and show the listing (F7)" />
+                <Button Classes="tool" Content="Load" Click="OnLoad" ToolTip.Tip="Assemble and store into KIM memory; the start becomes the open cell, so GO runs it (F8)" />
+                <Button Classes="tool" Content="▶ Load &amp; run" Click="OnLoadAndRun" ToolTip.Tip="Assemble, store and start at 'start' (or the first byte) (F5)" />
+                <Button Classes="tool" Content="Toggle breakpoint" Click="OnToggleBreakpoint" ToolTip.Tip="Breakpoint on the caret's line (F9)" />
+            </StackPanel>
+        </Border>
+
+        <ae:TextEditor x:Name="Editor" Grid.Row="1"
+                       ShowLineNumbers="True"
+                       FontFamily="Consolas, Menlo, DejaVu Sans Mono, monospace"
+                       FontSize="15"
+                       Background="#141414"
+                       Foreground="#D4D4D4"
+                       LineNumbersForeground="#5A5A5A"
+                       Padding="4,2"
+                       HorizontalScrollBarVisibility="Auto"
+                       VerticalScrollBarVisibility="Auto" />
+
+        <GridSplitter Grid.Row="2" Background="#101010" ResizeDirection="Rows" />
+
+        <TabControl x:Name="Tabs" Grid.Row="3" Padding="0">
+            <TabItem Header="Problems">
+                <ListBox x:Name="ProblemList" Background="#141414" DoubleTapped="OnProblemDoubleTapped"
+                         FontFamily="Consolas, Menlo, DejaVu Sans Mono, monospace" FontSize="13" />
+            </TabItem>
+            <TabItem Header="Listing">
+                <TextBox x:Name="ListingText" Classes="mono" IsReadOnly="True" AcceptsReturn="True" TextWrapping="NoWrap" />
+            </TabItem>
+            <TabItem Header="Symbols">
+                <TextBox x:Name="SymbolText" Classes="mono" IsReadOnly="True" AcceptsReturn="True" TextWrapping="NoWrap" />
+            </TabItem>
+        </TabControl>
+
+        <Border Grid.Row="4" Background="#101010" Padding="8,4">
+            <DockPanel>
+                <TextBlock x:Name="CaretText" DockPanel.Dock="Right" Foreground="#808080" FontSize="12" />
+                <TextBlock x:Name="StatusText" Foreground="#A0A0A0" FontSize="12" TextTrimming="CharacterEllipsis" />
+            </DockPanel>
+        </Border>
+    </Grid>
+</Window>
