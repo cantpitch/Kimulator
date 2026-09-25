@@ -28,9 +28,30 @@ Add `-- --compact` to start with only the display and keypad.
 | Esc | ST |
 | F12 | RS |
 | F9 | SST switch |
+| Ctrl+O / Ctrl+M | load program / save memory range (`.ptp`, `.hex`, `.bin`) |
+| Ctrl+S / Ctrl+L, F6 / F7 | save / load state, quick save / quick load |
+| Ctrl+T | terminal (TTY) window |
+| Ctrl+1 / Ctrl+2 | full board / compact view |
 
 By default, power-on points the NMI and IRQ vectors (`$17FA`, `$17FE`) at the monitor (`$1C00`) so ST, SST
 and BRK work right away. On a real KIM-1 you enter these by hand. You can turn this off in the Machine menu.
+
+## Teletype (TTY) mode
+
+**Machine › TTY mode** moves the TTY/KB jumper and resets the KIM. The monitor then talks to the terminal
+window at the bit level: it measures the baud rate from the first character after reset. By default the app
+sends that RUBOUT for you. The board's hardware echo shows what you type.
+
+What you can use there:
+- The monitor's TTY commands: `0200␠` opens a cell, `A9.` deposits a byte, Enter moves to the next cell,
+  Shift+Enter to the previous one, `G` runs, `Q` dumps paper tape up to EAL/EAH (`$17F7`), and `L` loads it.
+- **Load paper tape** types `L` and then sends a `.ptp` file, as if it came from the teletype's tape reader.
+- Pasted text and type-ahead are sent only when the KIM's output line is idle, because the monitor has no
+  receive buffer.
+
+**File › Load program** is the fast path: it writes `.ptp`, Intel HEX or raw binary straight into RAM and sets
+the monitor's open cell, so GO runs the program. Settings such as view, window placement, speed, TTY mode and
+baud rate are saved in `%APPDATA%\Kimulator` on Windows or `~/.config/Kimulator` on macOS and Linux.
 
 ## Test
 
@@ -45,10 +66,10 @@ The Harte tests skip themselves when the data is missing.
 
 | Project | Contents |
 |---|---|
-| `src/Kimulator.Core` | 6502 core, opcode table, `MachineRunner` (real-time emulation thread), expansion-card contract |
-| `src/Kimulator.Kim1` | 6530 RRIOT, KIM-1 board, LED display model, embedded ROMs |
-| `src/Kimulator.App` | Avalonia UI: board photo view, hotspot layout (`Assets/kim1-layout.json`) |
-| `tests/Kimulator.Tests` | CPU suites, interrupt timing, headless KIM-1 monitor tests |
+| `src/Kimulator.Core` | 6502 core, opcode table, `MachineRunner` (real-time emulation thread), expansion-card contract, paper tape / Intel HEX formats, teletype text buffer |
+| `src/Kimulator.Kim1` | 6530 RRIOT, KIM-1 board, LED display model, bit-level TTY interface, save states, embedded ROMs |
+| `src/Kimulator.App` | Avalonia UI: board photo view, hotspot layout (`Assets/kim1-layout.json`), terminal window, settings |
+| `tests/Kimulator.Tests` | CPU suites, interrupt timing, headless KIM-1 keypad and TTY monitor tests, file formats, save states |
 
 See [docs/PLAN.md](docs/PLAN.md) for the roadmap.
 

@@ -6,33 +6,51 @@
         Background="#181818">
     <DockPanel>
         <Menu DockPanel.Dock="Top">
+            <MenuItem Header="_File">
+                <MenuItem Header="_Load program…" InputGesture="Ctrl+O" Click="OnLoadProgram" />
+                <MenuItem Header="Save _memory…" InputGesture="Ctrl+M" Click="OnSaveMemory" />
+                <Separator />
+                <MenuItem Header="_Save state…" InputGesture="Ctrl+S" Click="OnSaveState" />
+                <MenuItem Header="Load s_tate…" InputGesture="Ctrl+L" Click="OnLoadState" />
+                <MenuItem Header="_Quick save" InputGesture="F6" Click="OnQuickSave" />
+                <MenuItem Header="Quick loa_d" InputGesture="F7" Click="OnQuickLoad" />
+                <Separator />
+                <MenuItem Header="E_xit" Click="OnExit" />
+            </MenuItem>
             <MenuItem Header="_Machine">
                 <MenuItem Header="_Reset (RS)" InputGesture="F12" Click="OnReset" />
                 <MenuItem Header="_Stop (ST)" InputGesture="Escape" Click="OnStop" />
                 <MenuItem x:Name="SingleStepMenu" Header="Single _step (SST)" InputGesture="F9" ToggleType="CheckBox" Click="OnToggleSingleStep" />
                 <Separator />
-                <MenuItem Header="_Power cycle" Click="OnPowerCycle" />
-                <MenuItem x:Name="PresetVectorsMenu" Header="Preset NMI/IRQ vectors at power-on" ToggleType="CheckBox" IsChecked="True" Click="OnTogglePresetVectors" />
+                <MenuItem x:Name="TtyModeMenu" Header="_TTY mode (teletype jumper)" ToggleType="CheckBox" Click="OnToggleTtyMode" />
+                <MenuItem x:Name="BaudMenu" Header="_Baud rate" />
                 <Separator />
-                <MenuItem Header="Spee_d">
-                    <MenuItem x:Name="Speed1" Header="1 MHz (real time)" ToggleType="Radio" GroupName="Speed" IsChecked="True" Click="OnSpeed" Tag="1" />
+                <MenuItem Header="_Power cycle" Click="OnPowerCycle" />
+                <MenuItem x:Name="PresetVectorsMenu" Header="Preset NMI/IRQ vectors at power-on" ToggleType="CheckBox" Click="OnTogglePresetVectors" />
+                <MenuItem x:Name="AutoCalibrateMenu" Header="Send RUBOUT after reset in TTY mode" ToggleType="CheckBox" Click="OnToggleAutoCalibrate" />
+                <Separator />
+                <MenuItem x:Name="SpeedMenu" Header="Spee_d">
+                    <MenuItem Header="1 MHz (real time)" ToggleType="Radio" GroupName="Speed" Click="OnSpeed" Tag="1" />
                     <MenuItem Header="2×" ToggleType="Radio" GroupName="Speed" Click="OnSpeed" Tag="2" />
                     <MenuItem Header="10×" ToggleType="Radio" GroupName="Speed" Click="OnSpeed" Tag="10" />
                     <MenuItem Header="Unthrottled" ToggleType="Radio" GroupName="Speed" Click="OnSpeed" Tag="0" />
                 </MenuItem>
-                <Separator />
-                <MenuItem Header="E_xit" Click="OnExit" />
             </MenuItem>
             <MenuItem Header="_View">
-                <MenuItem x:Name="FullViewMenu" Header="_Full board" ToggleType="Radio" GroupName="View" IsChecked="True" InputGesture="Ctrl+1" Click="OnFullView" />
+                <MenuItem x:Name="FullViewMenu" Header="_Full board" ToggleType="Radio" GroupName="View" InputGesture="Ctrl+1" Click="OnFullView" />
                 <MenuItem x:Name="CompactViewMenu" Header="_Compact (display and keypad)" ToggleType="Radio" GroupName="View" InputGesture="Ctrl+2" Click="OnCompactView" />
+                <Separator />
+                <MenuItem Header="_Terminal (TTY)" InputGesture="Ctrl+T" Click="OnShowTerminal" />
             </MenuItem>
             <MenuItem Header="_Help">
                 <MenuItem Header="_Keyboard shortcuts" Click="OnShowKeys" />
             </MenuItem>
         </Menu>
         <Border x:Name="StatusBar" DockPanel.Dock="Bottom" Background="#101010" Padding="8,3">
-            <TextBlock x:Name="StatusText" Foreground="#A0A0A0" FontSize="12" />
+            <DockPanel>
+                <TextBlock x:Name="SpeedText" DockPanel.Dock="Right" Foreground="#A0A0A0" FontSize="12" />
+                <TextBlock x:Name="StatusText" Foreground="#A0A0A0" FontSize="12" TextTrimming="CharacterEllipsis" />
+            </DockPanel>
         </Border>
         <ContentControl x:Name="BoardHost" />
     </DockPanel>

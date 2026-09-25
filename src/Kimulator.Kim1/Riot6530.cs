@@ -139,6 +139,37 @@ public sealed class Riot6530
         TimerInterruptFlag = false;
     }
 
+    public void SaveState(BinaryWriter writer)
+    {
+        writer.Write(PortAData);
+        writer.Write(PortADirection);
+        writer.Write(PortBData);
+        writer.Write(PortBDirection);
+        writer.Write(_timer);
+        writer.Write(_prescaleShift);
+        writer.Write(_prescaleCounter);
+        writer.Write(_timedOut);
+        writer.Write(TimerInterruptFlag);
+        writer.Write(TimerInterruptEnabled);
+        writer.Write(_ram);
+    }
+
+    public void LoadState(BinaryReader reader)
+    {
+        PortAData = reader.ReadByte();
+        PortADirection = reader.ReadByte();
+        PortBData = reader.ReadByte();
+        PortBDirection = reader.ReadByte();
+        _timer = reader.ReadByte();
+        _prescaleShift = reader.ReadInt32();
+        _prescaleCounter = reader.ReadInt32();
+        _timedOut = reader.ReadBoolean();
+        TimerInterruptFlag = reader.ReadBoolean();
+        TimerInterruptEnabled = reader.ReadBoolean();
+        reader.ReadExactly(_ram);
+        PortsChanged?.Invoke();
+    }
+
     private static byte Combine(byte latch, byte direction, byte external) =>
         (byte)((latch & direction) | (external & ~direction));
 }

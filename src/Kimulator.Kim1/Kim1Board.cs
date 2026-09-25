@@ -29,13 +29,16 @@ public sealed class Kim1Board : ICpuBus, IMachine
     private long _cycles;
     private long _nextFrameCycle = CyclesPerFrame;
     private byte _dataBus;
+    private bool _pb0 = true;
+    private bool _pb5 = true;
 
     public Kim1Board(byte[] rom002, byte[] rom003)
     {
         Cpu = new Cpu6502(this);
         Riot002 = new Riot6530("6530-002 (U2)", rom002) { PortAInput = KeypadPortA };
         Riot003 = new Riot6530("6530-003 (U3)", rom003);
-        Riot002.PortsChanged += UpdateDisplay;
+        Tty = new TtyInterface(ClockHz);
+        Riot002.PortsChanged += OnRiot002PortsChanged;
     }
 
     /// <summary>Creates a board with the original ROMs embedded in this assembly.</summary>
@@ -50,6 +53,9 @@ public sealed class Kim1Board : ICpuBus, IMachine
     public Riot6530 Riot003 { get; }
 
     public LedDisplay Display { get; } = new();
+
+    /// <summary>Teletype interface on PA7 (serial in) and PB0 (serial out) of the 6530-002.</summary>
+    public TtyInterface Tty { get; }
 
     public byte[] Ram => _ram;
 
@@ -212,11 +218,106 @@ public sealed class Kim1Board : ICpuBus, IMachine
         }
     }
 
+    // ---------------------------------------------------------------- loading programs
+
+    /// <summary>
+    /// Stores bytes into writable memory (base-board RAM below $2000, or a card that accepts the write).
+    /// Returns how many bytes had nowhere to go (ROM, I/O, unpopulated space).
+    /// </summary>
+    public int LoadMemory(ushort address, ReadOnlySpan<byte> data)
+    {
+        int skipped = 0;
+        for (int i = 0; i < data.Length; i++)
+        {
+            ushort a = (ushort)(address + i);
+            if (!TryStore(a, data[i])) skipped++;
+        }
+
+        return skipped;
+    }
+
+    /// <summary>Makes <paramref name="address"/> the monitor's open cell and saved PC, so GO (or PC) starts there.</summary>
+    public void SetOpenCell(ushort address)
+    {
+        _ram[MonitorPointL] = _ram[MonitorPcl] = (byte)address;
+        _ram[MonitorPointH] = _ram[MonitorPch] = (byte)(address >> 8);
+    }
+
+    // Monitor zero-page locations.
+    private const int MonitorPcl = 0xEF, MonitorPch = 0xF0, MonitorPointL = 0xFA, MonitorPointH = 0xFB;
+
+    private bool TryStore(ushort address, byte value)
+    {
+        foreach (var card in _cards)
+        {
+            if (card.TryWrite(address, value)) return true;
+        }
+
+        if (address < 0x0400) _ram[address] = value;
+        else if (address is >= 0x1780 and < 0x17C0) Riot003.WriteRam(address, value);
+        else if (address is >= 0x17C0 and < 0x1800) Riot002.WriteRam(address, value);
+        else return false;
+        return true;
+    }
+
+    // ---------------------------------------------------------------- save states
+
+    private const string StateMagic = "KIMSTATE";
+    private const int StateVersion = 1;
+
+    /// <summary>
+    /// Saves the complete machine state (CPU, RAM, RRIOTs, switches). Call between instructions,
+    /// on the emulation thread. Held keys and characters in flight on the TTY line are not saved.
+    /// </summary>
+    public void SaveState(Stream stream)
+    {
+        using var writer = new BinaryWriter(stream, System.Text.Encoding.ASCII, leaveOpen: true);
+        writer.Write(StateMagic.ToCharArray());
+        writer.Write(StateVersion);
+        writer.Write(_cycles);
+        writer.Write(_nextFrameCycle);
+        writer.Write(_dataBus);
+        writer.Write(SingleStep);
+        writer.Write(TtyMode);
+        writer.Write(Riot003TimerIrqJumper);
+        writer.Write(_ram);
+        Cpu.SaveState(writer);
+        Riot002.SaveState(writer);
+        Riot003.SaveState(writer);
+    }
+
+    public void LoadState(Stream stream)
+    {
+        using var reader = new BinaryReader(stream, System.Text.Encoding.ASCII, leaveOpen: true);
+        if (new string(reader.ReadChars(StateMagic.Length)) != StateMagic)
+            throw new InvalidDataException("Not a Kimulator save state.");
+        int version = reader.ReadInt32();
+        if (version != StateVersion)
+            throw new InvalidDataException($"Unsupported save state version {version}.");
+
+        _cycles = reader.ReadInt64();
+        _nextFrameCycle = reader.ReadInt64();
+        _dataBus = reader.ReadByte();
+        SingleStep = reader.ReadBoolean();
+        TtyMode = reader.ReadBoolean();
+        Riot003TimerIrqJumper = reader.ReadBoolean();
+        reader.ReadExactly(_ram);
+        Cpu.LoadState(reader);
+        Riot002.LoadState(reader);
+        Riot003.LoadState(reader);
+
+        _pressedKeys = 0;
+        _stopHeld = false;
+        _resetHeld = false;
+        Tty.ResetLine();
+    }
+
     // ---------------------------------------------------------------- internals
 
     private void TickDevices()
     {
         _cycles++;
+        Tty.Tick(_cycles, _pb0, _pb5);
         Riot002.Tick();
         Riot003.Tick();
         foreach (var card in _cards) card.Tick();
@@ -310,7 +411,7 @@ public sealed class Kim1Board : ICpuBus, IMachine
     private byte KeypadPortA()
     {
         int selected = (Riot002.PortBPins >> 1) & 0x0F;
-        byte pins = 0xFF;
+        byte pins = Tty.RxLevel ? (byte)0xFF : (byte)0x7F;
         if (selected <= 2 && _pressedKeys != 0)
         {
             for (int key = selected * 7; key < selected * 7 + 7 && key <= (int)Kim1Key.Pc; key++)
@@ -327,10 +428,14 @@ public sealed class Kim1Board : ICpuBus, IMachine
         return pins;
     }
 
-    private void UpdateDisplay()
+    private void OnRiot002PortsChanged()
     {
+        byte pb = Riot002.PortBPins;
+        _pb0 = (pb & 0x01) != 0;
+        _pb5 = (pb & 0x20) != 0;
+
         // 74145 outputs 4-9 drive the digit cathodes; PA0-PA6 driven high light segments a-g.
-        int selected = (Riot002.PortBPins >> 1) & 0x0F;
+        int selected = (pb >> 1) & 0x0F;
         int digit = selected is >= 4 and <= 9 ? selected - 4 : -1;
         byte segments = (byte)(Riot002.PortAData & Riot002.PortADirection & 0x7F);
         Display.Update(_cycles, digit, segments);

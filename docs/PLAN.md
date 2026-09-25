@@ -32,15 +32,17 @@
 | 1 | Cycle-accurate 6502; Harte (all 256 opcodes) and Dormann tests | ✅ |
 | 2 | 6530 RRIOT, KIM-1 board, address map, keypad matrix, display, RS/ST/SST; headless monitor tests | ✅ |
 | 3 | Avalonia board view: photo overlay, LED rendering, clickable keys, PC keyboard, SST switch, compact view, speed control | ✅ first version |
-| 4 | TTY serial mode with a terminal window (bit-banged through PA7/PB0 at the real bit timing); paper-tape load/dump; load/save `.bin`/`.ptp`; save states; persisted settings | |
+| 4 | TTY serial mode with a terminal window (bit-banged through PA7/PB0 at the real bit timing, PB5-gated hardware echo); paper-tape load/dump; load/save `.ptp`/`.hex`/`.bin`; save states; persisted settings | ✅ |
 | 5 | Debugger window: registers, disassembly, memory hex view/edit, breakpoints/watchpoints, step by instruction or cycle, bus trace | |
 | 6 | Text editor + built-in assembler (modern syntax) that assembles straight into memory | |
 | 7 | Cassette: WAV record/playback through the PB7 audio path; speaker audio for music programs | |
 | 8 | Expansion cards with their own board images: KIM-4 motherboard, KIM-2/KIM-3 RAM, KIM-5 ROM, KIM-6 prototyping; card rack view | |
 
-## Remaining polish for phase 3
+## Remaining polish
 
-- Persist view mode, window size, speed and key bindings.
+- Configurable key bindings.
 - Optional key-click sound.
+- Terminal: a blinking cursor and an optional "paper" look (it's a plain read-only text box today).
+- Save states from other versions: the format is versioned but there is no migration yet.
 - Fine-tune segment brightness and size against the photo.
 - App icon; packaging (`dotnet publish` single-file per OS, macOS `.app` bundle).

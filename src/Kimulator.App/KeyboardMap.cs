@@ -19,6 +19,11 @@ public static class KeyboardMap
         F9             SST switch on/off
 
         Ctrl+1 / Ctrl+2  full board / compact view
+        Ctrl+T           terminal (TTY) window
+        Ctrl+O           load program (.ptp, .hex, .bin)
+        Ctrl+M           save memory range
+        Ctrl+S / Ctrl+L  save / load state
+        F6 / F7          quick save / quick load
         """;
 
     public static Kim1Key? ToKimKey(Key key) => key switch
