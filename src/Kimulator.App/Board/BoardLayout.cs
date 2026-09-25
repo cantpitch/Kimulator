@@ -23,6 +23,9 @@ public sealed class BoardLayout
     public int SourceHeight { get; init; }
     public List<KeyHotspot> Keys { get; init; } = [];
     public LayoutRect SingleStepSwitch { get; init; }
+
+    /// <summary>Which way the SST slider moves for "on" on this board's keypad.</summary>
+    public bool SingleStepOnRight { get; init; }
     public DisplayLayout Display { get; init; } = new();
     public LayoutRect CompactView { get; init; }
 
@@ -51,6 +54,9 @@ public sealed class DisplayLayout
 {
     /// <summary>Horizontal shift of the top of a digit relative to its bottom, as a fraction of digit height.</summary>
     public double Slant { get; init; }
+
+    /// <summary>Segment stroke width as a fraction of digit width.</summary>
+    public double SegmentThickness { get; init; } = 0.2;
 
     public List<LayoutRect> Digits { get; init; } = [];
 }

@@ -115,7 +115,10 @@ public sealed class BoardView : Control
                 if (_pressed.Contains(key.Key))
                     DrawPressedKey(context, key, view, dest, scale, bitmapScale);
                 else if (ReferenceEquals(key, _hover))
-                    context.DrawRectangle(null, new Pen(HoverOutline, 1.5), Map(key.Bounds, view, dest, scale), 6 * scale, 6 * scale);
+                {
+                    double radius = key.Width * 0.08 * scale;
+                    context.DrawRectangle(null, new Pen(HoverOutline, 1.5), Map(key.Bounds, view, dest, scale), radius, radius);
+                }
             }
 
             DrawSingleStepSwitch(context, view, dest, scale);
@@ -129,10 +132,10 @@ public sealed class BoardView : Control
     {
         // Redraw the key cap slightly lower and shaded so it reads as pushed in.
         var keyRect = Map(key.Bounds, view, dest, scale);
-        double radius = 14 * scale;
+        double radius = key.Width * 0.11 * scale;
         using (context.PushClip(new RoundedRect(keyRect, radius)))
         {
-            context.DrawImage(BoardImage, ToBitmap(key.Bounds, bitmapScale), keyRect.Translate(new Vector(0, 5 * scale)));
+            context.DrawImage(BoardImage, ToBitmap(key.Bounds, bitmapScale), keyRect.Translate(new Vector(0, key.Height * 0.04 * scale)));
             context.FillRectangle(PressedShade, keyRect);
         }
     }
@@ -140,17 +143,20 @@ public sealed class BoardView : Control
     private void DrawSingleStepSwitch(DrawingContext context, Rect view, Rect dest, double scale)
     {
         var sw = Map(Layout.SingleStepSwitch.ToRect(), view, dest, scale);
-        context.DrawRectangle(SwitchBody, null, sw, 3 * scale, 3 * scale);
+        double inset = sw.Height * 0.12;
+        context.DrawRectangle(SwitchBody, null, sw, inset, inset);
         double thumbWidth = sw.Width * 0.45;
-        double x = _singleStep ? sw.X + 4 * scale : sw.Right - thumbWidth - 4 * scale;
-        var thumb = new Rect(x, sw.Y + 5 * scale, thumbWidth, sw.Height - 10 * scale);
-        context.DrawRectangle(SwitchThumb, null, thumb, 2 * scale, 2 * scale);
+        bool thumbRight = _singleStep == Layout.SingleStepOnRight;
+        double x = thumbRight ? sw.Right - thumbWidth - inset : sw.X + inset;
+        var thumb = new Rect(x, sw.Y + inset, thumbWidth, sw.Height - 2 * inset);
+        context.DrawRectangle(SwitchThumb, null, thumb, inset * 0.6, inset * 0.6);
     }
 
     private void DrawDisplay(DrawingContext context, Rect view, Rect dest, double scale)
     {
         var frame = _frame;
         double slant = Layout.Display.Slant;
+        double thickness = Layout.Display.SegmentThickness;
         for (int d = 0; d < Layout.Display.Digits.Count && d < LedDisplay.DigitCount; d++)
         {
             var box = Layout.Display.Digits[d].ToRect();
@@ -158,26 +164,26 @@ public sealed class BoardView : Control
             {
                 float level = Math.Clamp(frame[d, s] / FullBrightnessDuty, 0f, 1f);
                 if (level < 0.03f) continue;
-                var geometry = SegmentGeometry(s, box, slant, view, dest, scale);
-                DrawLitSegment(context, geometry, level, scale);
+                var geometry = SegmentGeometry(s, box, slant, thickness, view, dest, scale);
+                DrawLitSegment(context, geometry, level, box.Width * scale);
             }
         }
     }
 
-    private static void DrawLitSegment(DrawingContext context, Geometry geometry, float level, double scale)
+    private static void DrawLitSegment(DrawingContext context, Geometry geometry, float level, double digitWidth)
     {
-        // Soft glow (wide translucent strokes) under a bright core.
+        // Soft glow (wide translucent strokes) under a bright core, sized relative to the digit.
         byte glowAlpha = (byte)(70 * level);
-        context.DrawGeometry(null, new Pen(new SolidColorBrush(LedColor, glowAlpha / 255.0), 14 * scale, lineJoin: PenLineJoin.Round), geometry);
-        context.DrawGeometry(null, new Pen(new SolidColorBrush(LedColor, glowAlpha * 1.6 / 255.0), 6 * scale, lineJoin: PenLineJoin.Round), geometry);
+        context.DrawGeometry(null, new Pen(new SolidColorBrush(LedColor, glowAlpha / 255.0), digitWidth * 0.19, lineJoin: PenLineJoin.Round), geometry);
+        context.DrawGeometry(null, new Pen(new SolidColorBrush(LedColor, glowAlpha * 1.6 / 255.0), digitWidth * 0.08, lineJoin: PenLineJoin.Round), geometry);
         var core = Color.FromRgb(255, (byte)(48 + 110 * level), (byte)(24 + 60 * level));
         context.DrawGeometry(new SolidColorBrush(core, 0.35 + 0.65 * level), null, geometry);
     }
 
     /// <summary>Builds a hexagonal segment (0=a .. 6=g) inside a slanted digit box.</summary>
-    private static Geometry SegmentGeometry(int segment, Rect box, double slant, Rect view, Rect dest, double scale)
+    private static Geometry SegmentGeometry(int segment, Rect box, double slant, double tu, Rect view, Rect dest, double scale)
     {
-        const double tu = 0.20;                 // thickness as a fraction of width
+        // tu: thickness as a fraction of width
         double tv = tu * box.Width / box.Height; // same thickness as a fraction of height
         const double gap = 0.035;
         double left = tu / 2, right = 1 - tu / 2, top = tv / 2, mid = 0.5, bottom = 1 - tv / 2;

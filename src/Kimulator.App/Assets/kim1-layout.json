@@ -1,220 +1,222 @@
 {
-  "sourceWidth": 3264,
-  "sourceHeight": 4352,
+  "sourceWidth": 1913,
+  "sourceHeight": 2560,
   "keys": [
     {
       "key": "Go",
-      "x": 2388,
-      "y": 2910,
-      "width": 124,
-      "height": 124
+      "x": 1316,
+      "y": 1689,
+      "width": 92,
+      "height": 92
     },
     {
       "key": "Stop",
-      "x": 2566,
-      "y": 2910,
-      "width": 124,
-      "height": 124
+      "x": 1432,
+      "y": 1689,
+      "width": 92,
+      "height": 92
     },
     {
       "key": "Reset",
-      "x": 2743,
-      "y": 2910,
-      "width": 124,
-      "height": 124
+      "x": 1549,
+      "y": 1689,
+      "width": 92,
+      "height": 92
     },
     {
       "key": "Address",
-      "x": 2210,
-      "y": 3096,
-      "width": 124,
-      "height": 124
+      "x": 1316,
+      "y": 1804,
+      "width": 92,
+      "height": 92
     },
     {
       "key": "Data",
-      "x": 2388,
-      "y": 3096,
-      "width": 124,
-      "height": 124
+      "x": 1432,
+      "y": 1804,
+      "width": 92,
+      "height": 92
     },
     {
       "key": "Pc",
-      "x": 2566,
-      "y": 3096,
-      "width": 124,
-      "height": 124
+      "x": 1549,
+      "y": 1804,
+      "width": 92,
+      "height": 92
     },
     {
       "key": "Plus",
-      "x": 2743,
-      "y": 3096,
-      "width": 124,
-      "height": 124
+      "x": 1666,
+      "y": 1804,
+      "width": 92,
+      "height": 92
     },
     {
       "key": "DC",
-      "x": 2210,
-      "y": 3278,
-      "width": 124,
-      "height": 124
+      "x": 1316,
+      "y": 1926,
+      "width": 92,
+      "height": 92
     },
     {
       "key": "DD",
-      "x": 2388,
-      "y": 3278,
-      "width": 124,
-      "height": 124
+      "x": 1432,
+      "y": 1926,
+      "width": 92,
+      "height": 92
     },
     {
       "key": "DE",
-      "x": 2566,
-      "y": 3278,
-      "width": 124,
-      "height": 124
+      "x": 1549,
+      "y": 1926,
+      "width": 92,
+      "height": 92
     },
     {
       "key": "DF",
-      "x": 2743,
-      "y": 3278,
-      "width": 124,
-      "height": 124
+      "x": 1666,
+      "y": 1926,
+      "width": 92,
+      "height": 92
     },
     {
       "key": "D8",
-      "x": 2210,
-      "y": 3463,
-      "width": 124,
-      "height": 124
+      "x": 1316,
+      "y": 2042,
+      "width": 92,
+      "height": 92
     },
     {
       "key": "D9",
-      "x": 2388,
-      "y": 3463,
-      "width": 124,
-      "height": 124
+      "x": 1432,
+      "y": 2042,
+      "width": 92,
+      "height": 92
     },
     {
       "key": "DA",
-      "x": 2566,
-      "y": 3463,
-      "width": 124,
-      "height": 124
+      "x": 1549,
+      "y": 2042,
+      "width": 92,
+      "height": 92
     },
     {
       "key": "DB",
-      "x": 2743,
-      "y": 3463,
-      "width": 124,
-      "height": 124
+      "x": 1666,
+      "y": 2042,
+      "width": 92,
+      "height": 92
     },
     {
       "key": "D4",
-      "x": 2210,
-      "y": 3648,
-      "width": 124,
-      "height": 124
+      "x": 1316,
+      "y": 2159,
+      "width": 92,
+      "height": 92
     },
     {
       "key": "D5",
-      "x": 2388,
-      "y": 3648,
-      "width": 124,
-      "height": 124
+      "x": 1432,
+      "y": 2159,
+      "width": 92,
+      "height": 92
     },
     {
       "key": "D6",
-      "x": 2566,
-      "y": 3648,
-      "width": 124,
-      "height": 124
+      "x": 1549,
+      "y": 2159,
+      "width": 92,
+      "height": 92
     },
     {
       "key": "D7",
-      "x": 2743,
-      "y": 3648,
-      "width": 124,
-      "height": 124
+      "x": 1666,
+      "y": 2159,
+      "width": 92,
+      "height": 92
     },
     {
       "key": "D0",
-      "x": 2210,
-      "y": 3832,
-      "width": 124,
-      "height": 124
+      "x": 1316,
+      "y": 2276,
+      "width": 92,
+      "height": 92
     },
     {
       "key": "D1",
-      "x": 2388,
-      "y": 3832,
-      "width": 124,
-      "height": 124
+      "x": 1432,
+      "y": 2276,
+      "width": 92,
+      "height": 92
     },
     {
       "key": "D2",
-      "x": 2566,
-      "y": 3832,
-      "width": 124,
-      "height": 124
+      "x": 1549,
+      "y": 2276,
+      "width": 92,
+      "height": 92
     },
     {
       "key": "D3",
-      "x": 2743,
-      "y": 3832,
-      "width": 124,
-      "height": 124
+      "x": 1666,
+      "y": 2276,
+      "width": 92,
+      "height": 92
     }
   ],
   "singleStepSwitch": {
-    "x": 2228,
-    "y": 2944,
-    "width": 94,
-    "height": 48
+    "x": 1688,
+    "y": 1718,
+    "width": 52,
+    "height": 32
   },
+  "singleStepOnRight": true,
   "display": {
-    "slant": 0.16,
+    "slant": 0.14,
+    "segmentThickness": 0.14,
     "digits": [
       {
-        "x": 2050,
-        "y": 2300,
-        "width": 72,
-        "height": 112
+        "x": 1234,
+        "y": 1352,
+        "width": 40,
+        "height": 72
       },
       {
-        "x": 2210,
-        "y": 2300,
-        "width": 72,
-        "height": 112
+        "x": 1322,
+        "y": 1352,
+        "width": 40,
+        "height": 72
       },
       {
-        "x": 2368,
-        "y": 2300,
-        "width": 72,
-        "height": 112
+        "x": 1415,
+        "y": 1352,
+        "width": 40,
+        "height": 72
       },
       {
-        "x": 2525,
-        "y": 2300,
-        "width": 72,
-        "height": 112
+        "x": 1510,
+        "y": 1352,
+        "width": 40,
+        "height": 72
       },
       {
-        "x": 2725,
-        "y": 2300,
-        "width": 72,
-        "height": 112
+        "x": 1630,
+        "y": 1352,
+        "width": 40,
+        "height": 72
       },
       {
-        "x": 2885,
-        "y": 2300,
-        "width": 72,
-        "height": 112
+        "x": 1720,
+        "y": 1352,
+        "width": 40,
+        "height": 72
       }
     ]
   },
   "compactView": {
-    "x": 1900,
-    "y": 2120,
-    "width": 1230,
-    "height": 1920
+    "x": 1170,
+    "y": 1270,
+    "width": 700,
+    "height": 1160
   }
 }
