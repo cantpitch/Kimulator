@@ -1,9 +1,22 @@
+using Kimulator.Core.Audio;
 using Kimulator.Core.Bus;
 using Kimulator.Core.Cpu;
 using Kimulator.Core.Debugging;
 using Kimulator.Core.Machine;
 
 namespace Kimulator.Kim1;
+
+/// <summary>Which pin drives the (emulated) speaker.</summary>
+public enum SoundSource
+{
+    Off,
+    /// <summary>The cassette "audio out" (6530-002 PB7 as an output) — what most KIM music programs toggle.</summary>
+    TapeOutput,
+    /// <summary>Application connector PA0 (6530-003, $1700 bit 0).</summary>
+    ApplicationPA0,
+    /// <summary>Application connector PB0 (6530-003, $1702 bit 0).</summary>
+    ApplicationPB0,
+}
 
 /// <summary>
 /// The KIM-1 base board: 6502, 1 KB RAM, two 6530 RRIOTs (002 and 003), the 74145 digit/row
@@ -32,12 +45,18 @@ public sealed class Kim1Board : ICpuBus, IMachine
     private byte _dataBus;
     private bool _pb0 = true;
     private bool _pb5 = true;
+    private bool _pb7Out;
+    private bool _pb7Changed;
+    private bool _soundLevel;
 
     public Kim1Board(byte[] rom002, byte[] rom003)
     {
         Cpu = new Cpu6502(this);
-        Riot002 = new Riot6530("6530-002 (U2)", rom002) { PortAInput = KeypadPortA };
+        Cassette = new Cassette(DefaultClockHz);
+        Riot002 = new Riot6530("6530-002 (U2)", rom002) { PortAInput = KeypadPortA, PortBInput = TapeInput };
         Riot003 = new Riot6530("6530-003 (U3)", rom003);
+        Riot003.PortsChanged += UpdateSoundLevel;
+        Speaker = new PinSampler(DefaultClockHz, 44100, new AudioRing(44100));
         Tty = new TtyInterface(ClockHz);
         Debugger = new Debugger(Cpu, Peek);
         Riot002.PortsChanged += OnRiot002PortsChanged;
@@ -63,6 +82,22 @@ public sealed class Kim1Board : ICpuBus, IMachine
 
     /// <summary>Teletype interface on PA7 (serial in) and PB0 (serial out) of the 6530-002.</summary>
     public TtyInterface Tty { get; }
+
+    /// <summary>Cassette recorder on PB7 of the 6530-002 (output: tape audio out; input: PLL-decoded tape in).</summary>
+    public Cassette Cassette { get; }
+
+    /// <summary>Audio samples of <see cref="SoundSource"/> at 44.1 kHz, in <see cref="PinSampler.Output"/>.</summary>
+    public PinSampler Speaker { get; }
+
+    public SoundSource SoundSource
+    {
+        get;
+        set
+        {
+            field = value;
+            UpdateSoundLevel();
+        }
+    } = SoundSource.Off;
 
     public byte[] Ram => _ram;
 
@@ -346,6 +381,13 @@ public sealed class Kim1Board : ICpuBus, IMachine
     {
         _cycles++;
         Tty.Tick(_cycles, _pb0, _pb5);
+        if (Cassette.State != TapeState.Stopped)
+        {
+            Cassette.Tick(_cycles, _pb7Out, _pb7Changed);
+            _pb7Changed = false;
+        }
+
+        if (SoundSource != SoundSource.Off) Speaker.Tick(_soundLevel);
         Riot002.Tick();
         Riot003.Tick();
         foreach (var card in _cards) card.Tick();
@@ -461,12 +503,31 @@ public sealed class Kim1Board : ICpuBus, IMachine
         byte pb = Riot002.PortBPins;
         _pb0 = (pb & 0x01) != 0;
         _pb5 = (pb & 0x20) != 0;
+        bool pb7Out = (Riot002.PortBData & Riot002.PortBDirection & 0x80) != 0;
+        if (pb7Out != _pb7Out) _pb7Changed = true;
+        _pb7Out = pb7Out;
+        UpdateSoundLevel();
 
         // 74145 outputs 4-9 drive the digit cathodes; PA0-PA6 driven high light segments a-g.
         int selected = (pb >> 1) & 0x0F;
         int digit = selected is >= 4 and <= 9 ? selected - 4 : -1;
         byte segments = (byte)(Riot002.PortAData & Riot002.PortADirection & 0x7F);
         Display.Update(_cycles, digit, segments);
+    }
+
+    /// <summary>PB7 as an input: the tape PLL while a tape is playing, otherwise pulled high.</summary>
+    private byte TapeInput() =>
+        Cassette.State == TapeState.Playing && !Cassette.PllOutput ? (byte)0x7F : (byte)0xFF;
+
+    private void UpdateSoundLevel()
+    {
+        _soundLevel = SoundSource switch
+        {
+            SoundSource.TapeOutput => _pb7Out,
+            SoundSource.ApplicationPA0 => (Riot003.PortAData & Riot003.PortADirection & 0x01) != 0,
+            SoundSource.ApplicationPB0 => (Riot003.PortBData & Riot003.PortBDirection & 0x01) != 0,
+            _ => false,
+        };
     }
 
     private void CheckFrame()

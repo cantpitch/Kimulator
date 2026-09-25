@@ -1,0 +1,73 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="Kimulator.App.Audio.CassetteWindow"
+        Title="Cassette"
+        Width="560" SizeToContent="Height" CanResize="False"
+        Background="#161616">
+    <Window.Styles>
+        <Style Selector="TextBox.hex">
+            <Setter Property="FontFamily" Value="Consolas, Menlo, DejaVu Sans Mono, monospace" />
+            <Setter Property="Width" Value="76" />
+            <Setter Property="MaxLength" Value="4" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+        </Style>
+        <Style Selector="TextBlock.label">
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="Foreground" Value="#A0A0A0" />
+        </Style>
+        <Style Selector="Button.deck">
+            <Setter Property="MinWidth" Value="92" />
+            <Setter Property="HorizontalContentAlignment" Value="Center" />
+        </Style>
+    </Window.Styles>
+
+    <StackPanel Margin="16" Spacing="14">
+        <!-- Deck -->
+        <Border Background="#0E0E0E" CornerRadius="6" Padding="14,10">
+            <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto">
+                <TextBlock x:Name="StateText" FontSize="20" FontWeight="SemiBold" Foreground="#E0E0E0" />
+                <TextBlock x:Name="TimeText" Grid.Column="1" FontSize="20" Foreground="#E0C050"
+                           FontFamily="Consolas, Menlo, DejaVu Sans Mono, monospace" />
+                <ProgressBar x:Name="TapeProgress" Grid.Row="1" Grid.ColumnSpan="2" Margin="0,10,0,0" Minimum="0" Maximum="1" Height="6" />
+            </Grid>
+        </Border>
+
+        <StackPanel Orientation="Horizontal" Spacing="8">
+            <Button Classes="deck" Content="⏮ Rewind" Click="OnRewind" />
+            <Button Classes="deck" Content="▶ Play" Click="OnPlay" />
+            <Button Classes="deck" Content="● Record" Click="OnRecord" />
+            <Button Classes="deck" Content="■ Stop" Click="OnStop" />
+        </StackPanel>
+
+        <StackPanel Orientation="Horizontal" Spacing="8">
+            <Button Content="Open WAV…" Click="OnOpenWav" />
+            <Button Content="Save WAV…" Click="OnSaveWav" />
+            <CheckBox x:Name="AutoStopBox" Content="Stop recording after 2 s of silence" IsCheckedChanged="OnAutoStopChanged" Margin="8,0,0,0" />
+        </StackPanel>
+
+        <Separator />
+
+        <!-- Monitor helpers -->
+        <TextBlock Text="Save memory to tape (monitor DUMPT)" FontWeight="SemiBold" />
+        <StackPanel Orientation="Horizontal" Spacing="8">
+            <TextBlock Classes="label" Text="Start $" />
+            <TextBox x:Name="SaveStartBox" Classes="hex" Text="0200" />
+            <TextBlock Classes="label" Text="End $" />
+            <TextBox x:Name="SaveEndBox" Classes="hex" Text="02FF" />
+            <TextBlock Classes="label" Text="ID $" />
+            <TextBox x:Name="SaveIdBox" Classes="hex" Text="01" MaxLength="2" Width="56" />
+            <Button Content="Record program" Click="OnSaveProgram" />
+        </StackPanel>
+
+        <TextBlock Text="Load from tape (monitor LOADT)" FontWeight="SemiBold" />
+        <StackPanel Orientation="Horizontal" Spacing="8">
+            <TextBlock Classes="label" Text="ID $" />
+            <TextBox x:Name="LoadIdBox" Classes="hex" Text="00" MaxLength="2" Width="56" />
+            <TextBlock Classes="label" Text="(00 = first program found)" />
+            <Button Content="Play and load" Click="OnLoadProgram" />
+        </StackPanel>
+
+        <TextBlock x:Name="HelpText" Classes="label" FontSize="12" TextWrapping="Wrap"
+                   Text="These buttons do what you would on a real KIM-1: set SAL/SAH ($17F5), EAL/EAH ($17F7, end + 1) and ID ($17F9), then run $1800 (dump) or $1873 (load) with the recorder going. When loading finishes the display shows 0000 (or FFFF on a checksum error). Tape time runs in emulated time, so Machine › Speed › Unthrottled loads much faster." />
+    </StackPanel>
+</Window>

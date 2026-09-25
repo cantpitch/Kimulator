@@ -1,6 +1,7 @@
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using Avalonia.Threading;
+using Kimulator.App.Audio;
 using Kimulator.App.Debugging;
 using Kimulator.Core.Debugging;
 using Kimulator.Core.Formats;
@@ -33,6 +34,10 @@ public sealed class EmulatorSession : IDisposable
         Board.Tty.BaudRate = settings.BaudRate;
         Board.Tty.CharacterReceived += _ttyOutput.Enqueue;
         PresetInterruptVectors = settings.PresetInterruptVectors;
+        Board.SoundSource = settings.SoundSource;
+        Board.Speaker.Volume = (float)settings.Volume;
+        Board.Cassette.AutoStopSilenceSeconds = settings.CassetteAutoStop ? 2.0 : 0;
+        Audio = new AudioOutput(Board.Speaker.Output, Board.Speaker.SampleRate);
         AutoCalibrateTty = settings.AutoCalibrateTty;
         Runner = new MachineRunner(Board);
         Runner.Stopped += stop => Dispatcher.UIThread.Post(() =>
@@ -50,6 +55,9 @@ public sealed class EmulatorSession : IDisposable
     }
 
     public Kim1Board Board { get; }
+
+    /// <summary>Plays <see cref="Kim1Board.Speaker"/> on the default sound device.</summary>
+    public AudioOutput Audio { get; }
 
     public MachineRunner Runner { get; }
 
@@ -263,7 +271,64 @@ public sealed class EmulatorSession : IDisposable
         return result;
     }
 
-    public void Dispose() => Runner.Dispose();
+    public void Dispose()
+    {
+        Runner.Dispose();
+        Audio.Dispose();
+    }
+
+    // ---------------------------------------------------------------- sound and cassette
+
+    public void SetSound(SoundSource source, float volume) => Runner.Post(() =>
+    {
+        Board.SoundSource = source;
+        Board.Speaker.Volume = volume;
+    });
+
+    public Task<CassetteStatus> CassetteStatusAsync() => Runner.InvokeAsync(() =>
+    {
+        var c = Board.Cassette;
+        return new CassetteStatus(c.State, c.PositionSeconds, c.LengthSeconds, c.HasTape);
+    });
+
+    /// <summary>Runs a cassette operation (play, stop, rewind, ...) on the emulation thread.</summary>
+    public Task CassetteAsync(Action<Cassette, long> action) => Runner.InvokeAsync(() =>
+    {
+        action(Board.Cassette, Board.Cycles);
+        return true;
+    });
+
+    public Task<(float[] Samples, int SampleRate)> GetTapeAsync() => Runner.InvokeAsync(() =>
+        (Board.Cassette.GetTape(), Board.Cassette.TapeSampleRate));
+
+    /// <summary>Sets up the monitor's tape dump (SAL/EAL/ID), starts recording and runs DUMPT ($1800).</summary>
+    public async Task SaveToTapeAsync(ushort start, ushort endInclusive, byte id)
+    {
+        int end = endInclusive + 1;
+        await Runner.InvokeAsync(() =>
+        {
+            Board.Poke(0x17F5, (byte)start);
+            Board.Poke(0x17F6, (byte)(start >> 8));
+            Board.Poke(0x17F7, (byte)end);
+            Board.Poke(0x17F8, (byte)(end >> 8));
+            Board.Poke(0x17F9, id);
+            Board.Cassette.Record(Board.Cycles);
+            return true;
+        });
+        await RunFromAsync(0x1800);
+    }
+
+    /// <summary>Sets the tape ID to look for ($00 = any), starts the tape and runs LOADT ($1873).</summary>
+    public async Task LoadFromTapeAsync(byte id)
+    {
+        await Runner.InvokeAsync(() =>
+        {
+            Board.Poke(0x17F9, id);
+            Board.Cassette.Play();
+            return true;
+        });
+        await RunFromAsync(0x1873);
+    }
 
     /// <summary>Runs on the emulation thread after RS or power-on.</summary>
     private void AfterReset()

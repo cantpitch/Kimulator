@@ -33,6 +33,7 @@ Add `-- --compact` to start with only the display and keypad.
 | Ctrl+T | terminal (TTY) window |
 | Ctrl+D | debugger |
 | Ctrl+E | assembler / editor |
+| Ctrl+K | cassette deck |
 | Ctrl+1 / Ctrl+2 | full board / compact view |
 
 By default, power-on points the NMI and IRQ vectors (`$17FA`, `$17FE`) at the monitor (`$1C00`) so ST, SST
@@ -97,6 +98,20 @@ Details:
 - The debugger shows your program's labels, and the editor highlights the current line when execution stops.
 - Unsaved text is kept when you close the window.
 
+## Cassette and sound
+
+**View › Cassette deck** (Ctrl+K) connects a tape recorder to the KIM-1's audio interface:
+- **Recording** samples the tape output (PB7) at 44.1 kHz. It can stop automatically after 2 s of silence.
+- **Playback** goes through a model of the board's LM565 PLL, so the unmodified monitor reads tapes with its own
+  timing loops. That works for your own recordings and for any KIM tape WAV (8/16/24/32-bit PCM or float,
+  mono or stereo).
+- **"Record program" and "Play and load"** do the monitor steps for you: they set SAL/EAL/ID and run `$1800`
+  (DUMPT) or `$1873` (LOADT). Tape time is emulated time, so Machine › Speed › Unthrottled loads much faster.
+
+**Machine › Sound** plays a pin through your speakers: the tape output (PB7, the pin most KIM music programs
+toggle) or application port PA0/PB0. Audio goes through OpenAL Soft, which is bundled for Windows, macOS and
+Linux.
+
 ## Test
 
 ```bash
@@ -110,10 +125,10 @@ The Harte tests skip themselves when the data is missing.
 
 | Project | Contents |
 |---|---|
-| `src/Kimulator.Core` | 6502 core, opcode table, `MachineRunner` (real-time emulation thread), assembler, debugger/disassembler/symbols, expansion-card contract, paper tape / Intel HEX formats, teletype text buffer |
-| `src/Kimulator.Kim1` | 6530 RRIOT, KIM-1 board, LED display model, bit-level TTY interface, save states, embedded ROMs and monitor symbols |
-| `src/Kimulator.App` | Avalonia UI: board photo view, hotspot layout (`Assets/kim1-layout.json`), terminal, debugger and assembler windows, settings |
-| `tests/Kimulator.Tests` | CPU suites, interrupt timing, headless KIM-1 keypad and TTY monitor tests, file formats, save states, debugger, disassembler and assembler |
+| `src/Kimulator.Core` | 6502 core, opcode table, `MachineRunner` (real-time emulation thread), assembler, debugger/disassembler/symbols, expansion-card contract, paper tape / Intel HEX / WAV formats, audio sampling, teletype text buffer |
+| `src/Kimulator.Kim1` | 6530 RRIOT, KIM-1 board, LED display model, bit-level TTY interface, cassette with PLL model, save states, embedded ROMs and monitor symbols |
+| `src/Kimulator.App` | Avalonia UI: board photo view, hotspot layout (`Assets/kim1-layout.json`), terminal, debugger, assembler and cassette windows, OpenAL audio, settings |
+| `tests/Kimulator.Tests` | CPU suites, interrupt timing, headless KIM-1 keypad and TTY monitor tests, file formats, save states, cassette round trips, debugger, disassembler and assembler |
 
 See [docs/PLAN.md](docs/PLAN.md) for the roadmap.
 

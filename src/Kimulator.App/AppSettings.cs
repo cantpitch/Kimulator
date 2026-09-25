@@ -1,11 +1,13 @@
 using System.Text.Json;
+using System.Text.Json.Serialization;
+using Kimulator.Kim1;
 
 namespace Kimulator.App;
 
 /// <summary>User preferences, stored as JSON in the per-user application data folder.</summary>
 public sealed class AppSettings
 {
-    private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
+    private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true, Converters = { new JsonStringEnumConverter() } };
 
     public static string Directory { get; } =
         Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Kimulator");
@@ -36,6 +38,15 @@ public sealed class AppSettings
     public string? AssemblerScratch { get; set; }
 
     public bool AssemblerOpen { get; set; }
+
+    public SoundSource SoundSource { get; set; } = SoundSource.TapeOutput;
+
+    /// <summary>0..1</summary>
+    public double Volume { get; set; } = 0.5;
+
+    public bool CassetteAutoStop { get; set; } = true;
+
+    public bool CassetteOpen { get; set; }
 
     public static AppSettings Load()
     {

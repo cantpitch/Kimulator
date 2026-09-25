@@ -6,6 +6,7 @@ using Avalonia.Interactivity;
 using Avalonia.Media.Imaging;
 using Avalonia.Platform;
 using Avalonia.Threading;
+using Kimulator.App.Audio;
 using Kimulator.App.Board;
 using Kimulator.App.Debugging;
 using Kimulator.App.Dialogs;
@@ -28,6 +29,7 @@ public partial class MainWindow : Window
     private TerminalWindow? _terminal;
     private DebuggerWindow? _debugger;
     private AssemblerWindow? _assembler;
+    private CassetteWindow? _cassette;
     private long _lastStatusCycles;
     private DateTime _lastStatusTime = DateTime.UtcNow;
     private ushort _lastSaveStart = 0x0200, _lastSaveEnd = 0x03FF, _lastBinaryAddress = 0x0200;
@@ -75,12 +77,20 @@ public partial class MainWindow : Window
             Opened += (_, _) => ShowDebugger();
         if (_settings.AssemblerOpen || Environment.GetCommandLineArgs().Contains("--assembler"))
             Opened += (_, _) => ShowAssembler();
+        if (_settings.CassetteOpen || Environment.GetCommandLineArgs().Contains("--cassette"))
+            Opened += (_, _) => ShowCassette();
+        Opened += (_, _) => DispatcherTimer.RunOnce(() =>
+        {
+            if (_session.Audio.Error is { } error) ShowStatus($"Sound is unavailable: {error}");
+        }, TimeSpan.FromSeconds(1));
     }
 
     protected override void OnClosing(WindowClosingEventArgs e)
     {
         _settings.TerminalOpen = _terminal is not null;
         _settings.AssemblerOpen = _assembler is not null;
+        _settings.CassetteOpen = _cassette is not null;
+        _cassette?.Close();
         // Close child windows first: the assembler stores unsaved text in the settings as it closes.
         _terminal?.Close();
         _debugger?.Close();
@@ -140,6 +150,13 @@ public partial class MainWindow : Window
 
         ApplySpeed(_settings.Speed);
 
+        foreach (var item in SoundMenu.Items.OfType<MenuItem>())
+        {
+            if (item.Tag is not string tag) continue;
+            if (item.GroupName == "Sound") item.IsChecked = tag == _settings.SoundSource.ToString();
+            else item.IsChecked = Math.Abs(double.Parse(tag, CultureInfo.InvariantCulture) - _settings.Volume) < 0.01;
+        }
+
         foreach (int baud in BaudRates)
         {
             var item = new MenuItem { Header = $"{baud} baud", ToggleType = MenuItemToggleType.Radio, GroupName = "Baud", Tag = baud, IsChecked = baud == _settings.BaudRate };
@@ -192,6 +209,7 @@ public partial class MainWindow : Window
                 case Key.T: ShowTerminal(); break;
                 case Key.D: ShowDebugger(); break;
                 case Key.E: ShowAssembler(); break;
+                case Key.K: ShowCassette(); break;
                 default: e.Handled = false; break;
             }
 
@@ -449,6 +467,35 @@ public partial class MainWindow : Window
     private void OnShowDebugger(object? sender, RoutedEventArgs e) => ShowDebugger();
 
     private void OnShowAssembler(object? sender, RoutedEventArgs e) => ShowAssembler();
+
+    private void OnShowCassette(object? sender, RoutedEventArgs e) => ShowCassette();
+
+    private void ShowCassette()
+    {
+        if (_cassette is not null)
+        {
+            _cassette.Activate();
+            return;
+        }
+
+        _cassette = new CassetteWindow(_session, _settings);
+        _cassette.Closed += (_, _) => _cassette = null;
+        _cassette.Show(this);
+    }
+
+    private void OnSoundSource(object? sender, RoutedEventArgs e)
+    {
+        if (sender is not MenuItem { Tag: string tag } || !Enum.TryParse<SoundSource>(tag, out var source)) return;
+        _settings.SoundSource = source;
+        _session.SetSound(source, (float)_settings.Volume);
+    }
+
+    private void OnVolume(object? sender, RoutedEventArgs e)
+    {
+        if (sender is not MenuItem { Tag: string tag }) return;
+        _settings.Volume = double.Parse(tag, CultureInfo.InvariantCulture);
+        _session.SetSound(_settings.SoundSource, (float)_settings.Volume);
+    }
 
     private void ShowAssembler()
     {

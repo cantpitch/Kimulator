@@ -29,6 +29,17 @@
                 <MenuItem x:Name="PresetVectorsMenu" Header="Preset NMI/IRQ vectors at power-on" ToggleType="CheckBox" Click="OnTogglePresetVectors" />
                 <MenuItem x:Name="AutoCalibrateMenu" Header="Send RUBOUT after reset in TTY mode" ToggleType="CheckBox" Click="OnToggleAutoCalibrate" />
                 <Separator />
+                <MenuItem x:Name="SoundMenu" Header="S_ound">
+                    <MenuItem Header="Off" ToggleType="Radio" GroupName="Sound" Tag="Off" Click="OnSoundSource" />
+                    <MenuItem Header="Tape output (PB7 — most KIM music programs)" ToggleType="Radio" GroupName="Sound" Tag="TapeOutput" Click="OnSoundSource" />
+                    <MenuItem Header="Application port PA0 ($1700)" ToggleType="Radio" GroupName="Sound" Tag="ApplicationPA0" Click="OnSoundSource" />
+                    <MenuItem Header="Application port PB0 ($1702)" ToggleType="Radio" GroupName="Sound" Tag="ApplicationPB0" Click="OnSoundSource" />
+                    <Separator />
+                    <MenuItem Header="Volume 25%" ToggleType="Radio" GroupName="Volume" Tag="0.25" Click="OnVolume" />
+                    <MenuItem Header="Volume 50%" ToggleType="Radio" GroupName="Volume" Tag="0.5" Click="OnVolume" />
+                    <MenuItem Header="Volume 75%" ToggleType="Radio" GroupName="Volume" Tag="0.75" Click="OnVolume" />
+                    <MenuItem Header="Volume 100%" ToggleType="Radio" GroupName="Volume" Tag="1" Click="OnVolume" />
+                </MenuItem>
                 <MenuItem x:Name="SpeedMenu" Header="Spee_d">
                     <MenuItem Header="1 MHz (real time)" ToggleType="Radio" GroupName="Speed" Click="OnSpeed" Tag="1" />
                     <MenuItem Header="2×" ToggleType="Radio" GroupName="Speed" Click="OnSpeed" Tag="2" />
@@ -43,6 +54,7 @@
                 <MenuItem Header="_Terminal (TTY)" InputGesture="Ctrl+T" Click="OnShowTerminal" />
                 <MenuItem Header="_Debugger" InputGesture="Ctrl+D" Click="OnShowDebugger" />
                 <MenuItem Header="_Assembler" InputGesture="Ctrl+E" Click="OnShowAssembler" />
+                <MenuItem Header="Cassette _deck" InputGesture="Ctrl+K" Click="OnShowCassette" />
             </MenuItem>
             <MenuItem Header="_Help">
                 <MenuItem Header="_Keyboard shortcuts" Click="OnShowKeys" />

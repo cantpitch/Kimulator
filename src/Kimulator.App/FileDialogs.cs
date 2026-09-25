@@ -13,6 +13,7 @@ public static class FileDialogs
     public static readonly FilePickerFileType Text = new("Text") { Patterns = ["*.txt"] };
     public static readonly FilePickerFileType All = new("All files") { Patterns = ["*"] };
     public static readonly FilePickerFileType Assembly = new("6502 assembly") { Patterns = ["*.asm", "*.s", "*.a65", "*.inc"] };
+    public static readonly FilePickerFileType Wav = new("WAV audio") { Patterns = ["*.wav"] };
 
     public static readonly FilePickerFileType Programs = new("Programs (.ptp, .hex, .bin)")
     {
@@ -24,6 +25,7 @@ public static class FileDialogs
     public static IReadOnlyList<FilePickerFileType> TextTypes { get; } = [Text, All];
     public static IReadOnlyList<FilePickerFileType> SaveStateTypes { get; } = [SaveState, All];
     public static IReadOnlyList<FilePickerFileType> AssemblyTypes { get; } = [Assembly, All];
+    public static IReadOnlyList<FilePickerFileType> WavTypes { get; } = [Wav, All];
 
     /// <summary>Like <see cref="OpenAsync"/> but also returns the local path (needed to save back to the same file).</summary>
     public static async Task<(string Path, byte[] Content)?> OpenPathAsync(

@@ -35,7 +35,7 @@
 | 4 | TTY serial mode with a terminal window (bit-banged through PA7/PB0 at the real bit timing, PB5-gated hardware echo); paper-tape load/dump; load/save `.ptp`/`.hex`/`.bin`; save states; persisted settings | ✅ |
 | 5 | Debugger window: registers, disassembly with monitor symbols, memory hex view/edit, breakpoints/watchpoints, step/over/out/run-to, bus-cycle trace and instruction history | ✅ (stepping is per instruction; cycle detail via the bus trace) |
 | 6 | Text editor (AvaloniaEdit) + built-in ca65/64tass-style assembler that assembles straight into memory; source-level breakpoints and PC highlighting | ✅ |
-| 7 | Cassette: WAV record/playback through the PB7 audio path; speaker audio for music programs | |
+| 7 | Cassette: WAV record/playback through PB7 with an LM565 PLL model; speaker audio (OpenAL Soft) from tape out or application port | ✅ |
 | 8 | Expansion cards with their own board images: KIM-4 motherboard, KIM-2/KIM-3 RAM, KIM-5 ROM, KIM-6 prototyping; card rack view | |
 
 ## Remaining polish
