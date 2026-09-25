@@ -3,6 +3,7 @@ using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Input.Platform;
 using Avalonia.Interactivity;
+using Avalonia.Media;
 using Avalonia.Threading;
 using Kimulator.Core.Formats;
 
@@ -35,6 +36,8 @@ public partial class TerminalWindow : Window
         BaudBox.ItemsSource = BaudRates;
         BaudBox.SelectedItem = BaudRates.Contains(settings.BaudRate) ? settings.BaudRate : 1200;
         UppercaseBox.IsChecked = settings.TerminalUppercase;
+        PaperBox.IsChecked = settings.TerminalPaper;
+        ApplyLook(settings.TerminalPaper);
         _initializing = false;
 
         AddHandler(KeyDownEvent, OnPreviewKeyDown, RoutingStrategies.Tunnel);
@@ -144,6 +147,49 @@ public partial class TerminalWindow : Window
         if (_initializing || BaudBox.SelectedItem is not int baud || baud == _settings.BaudRate) return;
         _settings.BaudRate = baud;
         _session.SetBaudRate(baud);
+    }
+
+    private void OnPaperChanged(object? sender, RoutedEventArgs e)
+    {
+        if (_initializing) return;
+        _settings.TerminalPaper = PaperBox.IsChecked == true;
+        ApplyLook(_settings.TerminalPaper);
+    }
+
+    // ---------------------------------------------------------------- looks
+
+    private static readonly FontFamily ScreenFont = new("Consolas, Menlo, DejaVu Sans Mono, monospace");
+    private static readonly FontFamily TypewriterFont = new("Courier Prime, Courier New, Courier, Nimbus Mono PS, FreeMono, Liberation Mono, monospace");
+
+    /// <summary>Glowing amber CRT, or cream teletype paper with typewriter ink.</summary>
+    private void ApplyLook(bool paper)
+    {
+        IBrush background = paper
+            ? new LinearGradientBrush
+            {
+                StartPoint = new Avalonia.RelativePoint(0, 0, Avalonia.RelativeUnit.Relative),
+                EndPoint = new Avalonia.RelativePoint(1, 1, Avalonia.RelativeUnit.Relative),
+                GradientStops =
+                {
+                    new GradientStop(Color.FromRgb(0xF7, 0xF2, 0xE4), 0),
+                    new GradientStop(Color.FromRgb(0xEE, 0xE6, 0xD0), 1),
+                },
+            }
+            : new SolidColorBrush(Color.FromRgb(0x0C, 0x0C, 0x0C));
+        IBrush ink = new SolidColorBrush(paper ? Color.FromRgb(0x2A, 0x25, 0x20) : Color.FromRgb(0xFF, 0xC2, 0x4A));
+
+        Screen.Background = background;
+        Screen.Foreground = ink;
+        Screen.FontFamily = paper ? TypewriterFont : ScreenFont;
+        Screen.FontSize = paper ? 16 : 15;
+        Screen.FontWeight = paper ? FontWeight.SemiBold : FontWeight.Normal;
+        Screen.CaretBrush = ink;
+        Screen.SelectionBrush = new SolidColorBrush(paper ? Color.FromArgb(0x55, 0x80, 0x60, 0x30) : Color.FromArgb(0x66, 0xFF, 0xC2, 0x4A));
+        Screen.Resources["TextControlBackgroundFocused"] = background;
+        Screen.Resources["TextControlBackgroundPointerOver"] = background;
+        Screen.Resources["TextControlForegroundFocused"] = ink;
+        Screen.Resources["TextControlForegroundPointerOver"] = ink;
+        Screen.Padding = paper ? new Avalonia.Thickness(28, 16) : new Avalonia.Thickness(10);
     }
 
     private void OnUppercaseChanged(object? sender, RoutedEventArgs e)

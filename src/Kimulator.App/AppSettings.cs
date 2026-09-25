@@ -10,8 +10,11 @@ public sealed class AppSettings
 {
     private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true, Converters = { new JsonStringEnumConverter() } };
 
+    /// <summary>Settings folder; KIMULATOR_SETTINGS_DIR overrides it (for testing or a portable install).</summary>
     public static string Directory { get; } =
-        Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Kimulator");
+        Environment.GetEnvironmentVariable("KIMULATOR_SETTINGS_DIR") is { Length: > 0 } dir
+            ? dir
+            : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Kimulator");
 
     private static string FilePath => Path.Combine(Directory, "settings.json");
 
@@ -46,6 +49,12 @@ public sealed class AppSettings
     public double Volume { get; set; } = 0.5;
 
     public bool CassetteAutoStop { get; set; } = true;
+
+    /// <summary>Play assets/sounds/keypress.mp3 when keypad keys go down and up.</summary>
+    public bool KeyClick { get; set; } = true;
+
+    /// <summary>Show the terminal as printed teletype paper with a typewriter font.</summary>
+    public bool TerminalPaper { get; set; }
 
     public bool CassetteOpen { get; set; }
 

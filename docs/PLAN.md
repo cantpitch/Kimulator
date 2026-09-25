@@ -41,8 +41,7 @@
 ## Remaining polish
 
 - Configurable key bindings.
-- Optional key-click sound.
-- Terminal: a blinking cursor and an optional "paper" look (it's a plain read-only text box today).
+- Terminal: a blinking cursor.
 - Save states from other versions: the format is versioned but there is no migration yet.
 - Fine-tune segment brightness and size against the photo.
-- App icon; packaging (`dotnet publish` single-file per OS, macOS `.app` bundle).
+- Notarized macOS builds and signed Windows builds (needs developer certificates); an AppImage for Linux.

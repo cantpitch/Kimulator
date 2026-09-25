@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Kimulator
+GenericName=KIM-1 Emulator
+Comment=Emulator of the MOS Technology KIM-1 single board computer
+Exec=Kimulator
+Icon=kimulator
+Terminal=false
+Categories=Development;Emulator;Education;

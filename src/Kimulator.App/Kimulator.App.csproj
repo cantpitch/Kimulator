@@ -3,11 +3,18 @@
     <OutputType>WinExe</OutputType>
     <TargetFramework>net10.0</TargetFramework>
     <ApplicationManifest>app.manifest</ApplicationManifest>
+    <AssemblyName>Kimulator</AssemblyName>
+    <RootNamespace>Kimulator.App</RootNamespace>
+    <ApplicationIcon>Assets\kimulator.ico</ApplicationIcon>
+    <Product>Kimulator</Product>
+    <Description>KIM-1 single board computer emulator</Description>
+    <Version>1.0.0</Version>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
   <ItemGroup>
     <AvaloniaResource Include="Assets\**" />
+    <AvaloniaResource Include="..\..\assets\sounds\keypress.mp3" Link="Assets\sounds\keypress.mp3" />
   </ItemGroup>
 
   <ItemGroup>
@@ -20,6 +27,7 @@
       <IncludeAssets Condition="'$(Configuration)' != 'Debug'">None</IncludeAssets>
       <PrivateAssets Condition="'$(Configuration)' != 'Debug'">All</PrivateAssets>
     </PackageReference>
+    <PackageReference Include="NLayer" Version="3.0.0" />
     <PackageReference Include="Silk.NET.OpenAL" Version="2.23.0" />
     <PackageReference Include="Silk.NET.OpenAL.Soft.Native" Version="1.23.1" />
   </ItemGroup>
@@ -28,4 +36,15 @@
     <ProjectReference Include="..\Kimulator.Core\Kimulator.Core.csproj" />
     <ProjectReference Include="..\Kimulator.Kim1\Kimulator.Kim1.csproj" />
   </ItemGroup>
+  <!--
+    Silk.NET loads OpenAL Soft with its own loader, which looks next to the executable; it can't see
+    native libraries packed inside a single-file build. Keep that one library beside the executable.
+  -->
+  <Target Name="KeepOpenAlBesideSingleFile" AfterTargets="ComputeResolvedFilesToPublishList">
+    <ItemGroup>
+      <ResolvedFileToPublish Update="@(ResolvedFileToPublish)"
+                             Condition="'%(Filename)' == 'soft_oal' Or '%(Filename)' == 'libopenal'"
+                             ExcludeFromSingleFile="true" />
+    </ItemGroup>
+  </Target>
 </Project>

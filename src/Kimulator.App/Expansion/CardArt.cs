@@ -18,7 +18,7 @@ public sealed record CardArt(string Asset, int SourceWidth, int SourceHeight, IR
 {
     private Bitmap? _bitmap;
 
-    public Bitmap Bitmap => _bitmap ??= new Bitmap(AssetLoader.Open(new Uri($"avares://Kimulator.App/Assets/cards/{Asset}")));
+    public Bitmap Bitmap => _bitmap ??= new Bitmap(AssetLoader.Open(new Uri($"avares://Kimulator/Assets/cards/{Asset}")));
 
     // Measured from the photos in images/. Orientation of the switches follows the MOS manual's figure
     // (KIM-2/3) and the "OPEN" legend printed on the KIM-5's switches.

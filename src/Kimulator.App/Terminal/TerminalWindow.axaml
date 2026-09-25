@@ -6,17 +6,19 @@
         Background="#141414">
     <DockPanel>
         <Border DockPanel.Dock="Top" Background="#1E1E1E" Padding="8,6">
-            <StackPanel Orientation="Horizontal" Spacing="8">
+            <WrapPanel ItemSpacing="8" LineSpacing="6">
                 <TextBlock Text="Baud" VerticalAlignment="Center" />
                 <ComboBox x:Name="BaudBox" Width="96" SelectionChanged="OnBaudChanged" />
                 <CheckBox x:Name="UppercaseBox" Content="Uppercase" IsCheckedChanged="OnUppercaseChanged"
                           ToolTip.Tip="Send letters as capitals (the KIM monitor and a Teletype ASR-33 only know upper case)" />
+                <CheckBox x:Name="PaperBox" Content="Paper" IsCheckedChanged="OnPaperChanged"
+                          ToolTip.Tip="Show the output as printed teletype paper with a typewriter font" />
                 <Button Content="Load paper tape…" Click="OnLoadPaperTape"
                         ToolTip.Tip="Type L and send a .ptp file, as if from the Teletype's tape reader" />
                 <Button Content="Send text…" Click="OnSendText" ToolTip.Tip="Type the contents of a text file" />
                 <Button Content="Save transcript…" Click="OnSaveTranscript" />
                 <Button Content="Clear" Click="OnClear" />
-            </StackPanel>
+            </WrapPanel>
         </Border>
         <Border DockPanel.Dock="Bottom" Background="#101010" Padding="8,4">
             <DockPanel>

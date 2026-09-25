@@ -483,3 +483,7 @@ $RECYCLE.BIN/
 
 # Large downloaded test suites
 test-data/
+
+# Packaging output
+dist/
+artifacts/

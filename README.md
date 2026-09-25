@@ -3,13 +3,32 @@
 A cross-platform (Windows, macOS, Linux) KIM-1 emulator in .NET 10 and Avalonia. The window shows a photo
 of a real KIM-1, and the keys, the SST switch and the LED display on the photo all work.
 
+<p align="center">
+  <img src="docs/screenshots/main.jpg" alt="The KIM-1 board running a program that shows C0DE on its LED display" width="440">
+  &nbsp;
+  <img src="docs/screenshots/compact.jpg" alt="Compact view: only the display and keypad" width="252">
+</p>
+
 - **Cycle-accurate NMOS 6502**, including the undocumented opcodes and NMOS decimal-mode behavior. It passes
   Tom Harte's SingleStepTests, which check every bus cycle of every opcode, and Klaus Dormann's functional test.
 - **Hardware-level KIM-1**: the original 6530-002 and 6530-003 ROMs run unmodified, with no patched monitor
   routines. The model covers the 74145 digit/row decoder, the keypad matrix, the multiplexed LEDs (brightness
   comes from each segment's duty cycle), RS/ST/SST, and the 8 KB address mirroring.
+- **Beyond the board**: a teletype terminal, a debugger, an assembler/editor, a cassette deck with sound, and the
+  KIM-2/3/4/5 expansion cards.
 
-## Run
+## Download
+
+Packages for Windows, macOS and Linux are on the [Releases](../../releases) page. They're self-contained, so you
+don't need to install .NET.
+
+| OS | Package | How to start |
+|---|---|---|
+| Windows | `Kimulator-<version>-win-x64.zip` (or `-win-arm64`) | Unzip and run `Kimulator.exe`. |
+| macOS | `Kimulator-<version>-osx-arm64.dmg` (Apple Silicon) or `-osx-x64.dmg` (Intel) | Drag `Kimulator.app` to Applications. It's signed ad hoc, not notarized, so the first time you open it, right-click › Open. |
+| Linux | `Kimulator-<version>-linux-x64.tar.gz` (or `-linux-arm64`) | Unpack and run `./Kimulator`, or run `./install.sh` to add it to your menu. It needs a desktop with X11 or XWayland. |
+
+## Run from source
 
 ```bash
 dotnet run --project src/Kimulator.App
@@ -38,8 +57,15 @@ Add `-- --compact` to start with only the display and keypad.
 
 By default, power-on points the NMI and IRQ vectors (`$17FA`, `$17FE`) at the monitor (`$1C00`) so ST, SST
 and BRK work right away. On a real KIM-1 you enter these by hand. You can turn this off in the Machine menu.
+Keys click as you press them; turn that off in **Machine › Sound › Key click**.
 
 ## Teletype (TTY) mode
+
+<p align="center">
+  <img src="docs/screenshots/terminal-paper.png" alt="Terminal window with the paper look" width="440">
+  &nbsp;
+  <img src="docs/screenshots/terminal-crt.png" alt="Terminal window with the amber screen look" width="440">
+</p>
 
 **Machine › TTY mode** moves the TTY/KB jumper and resets the KIM. The monitor then talks to the terminal
 window at the bit level: it measures the baud rate from the first character after reset. By default the app
@@ -51,12 +77,16 @@ What you can use there:
 - **Load paper tape** types `L` and then sends a `.ptp` file, as if it came from the teletype's tape reader.
 - Pasted text and type-ahead are sent only when the KIM's output line is idle, because the monitor has no
   receive buffer.
+- **Paper** switches between an amber screen and teletype paper with a typewriter font.
 
 **File › Load program** is the fast path: it writes `.ptp`, Intel HEX or raw binary straight into RAM and sets
 the monitor's open cell, so GO runs the program. Settings such as view, window placement, speed, TTY mode and
-baud rate are saved in `%APPDATA%\Kimulator` on Windows or `~/.config/Kimulator` on macOS and Linux.
+baud rate are saved in `%APPDATA%\Kimulator` on Windows or `~/.config/Kimulator` on macOS and Linux. Set
+`KIMULATOR_SETTINGS_DIR` to keep them somewhere else, for example for a portable install.
 
 ## Debugger
+
+<p align="center"><img src="docs/screenshots/debugger.png" alt="Debugger stopped at a breakpoint" width="800"></p>
 
 **View › Debugger** (Ctrl+D) opens a debugger for the running machine:
 - Disassembly with the monitor's own labels (`SCAND`, `OUTCH`, …) and undocumented opcodes highlighted.
@@ -72,6 +102,8 @@ Stepping works one instruction at a time. For cycle-level detail, use the bus tr
 whole machine stops and the LED display freezes on its last frame.
 
 ## Assembler
+
+<p align="center"><img src="docs/screenshots/assembler.png" alt="Assembler window with a source-level breakpoint hit" width="700"></p>
 
 **View › Assembler** (Ctrl+E) opens an editor with syntax highlighting and a built-in 6502 assembler. It uses
 ca65/64tass-style syntax:
@@ -100,6 +132,8 @@ Details:
 
 ## Cassette and sound
 
+<p align="center"><img src="docs/screenshots/cassette.png" alt="Cassette deck recording a program" width="440"></p>
+
 **View › Cassette deck** (Ctrl+K) connects a tape recorder to the KIM-1's audio interface:
 - **Recording** samples the tape output (PB7) at 44.1 kHz. It can stop automatically after 2 s of silence.
 - **Playback** goes through a model of the board's LM565 PLL, so the unmodified monitor reads tapes with its own
@@ -109,10 +143,12 @@ Details:
   (DUMPT) or `$1873` (LOADT). Tape time is emulated time, so Machine › Speed › Unthrottled loads much faster.
 
 **Machine › Sound** plays a pin through your speakers: the tape output (PB7, the pin most KIM music programs
-toggle) or application port PA0/PB0. Audio goes through OpenAL Soft, which is bundled for Windows, macOS and
-Linux.
+toggle) or application port PA0/PB0. The same menu turns the keypad click on or off and sets the volume. Audio
+goes through OpenAL Soft, which is bundled for Windows, macOS and Linux.
 
 ## Expansion cards
+
+<p align="center"><img src="docs/screenshots/expansion.jpg" alt="Expansion window with a KIM-4, a KIM-3 and a KIM-5" width="800"></p>
 
 **Machine › Expansion cards…** installs KIM system cards. Each card is shown as a photo, and you set its
 address the way you would on the real card: click its DIP switches.
@@ -144,14 +180,31 @@ dotnet test tests/Kimulator.Tests
 
 The Harte tests skip themselves when the data is missing.
 
+## Packaging
+
+```bash
+./scripts/package.sh                       # for the machine you're on
+./scripts/package.sh win-x64 linux-x64 osx-arm64
+```
+
+The packages go to `dist/`:
+- **Windows and Linux:** a self-contained single-file executable, with the OpenAL library beside it. Windows gets a
+  `.zip`; Linux gets a `.tar.gz` that also has an icon, a `.desktop` entry and `install.sh`.
+- **macOS:** a `Kimulator.app` bundle. Built on a Mac, it's signed ad hoc and also packed as a `.dmg`.
+- **Requirements:** the .NET 10 SDK and Python 3. Python keeps the execute permissions in archives built on any OS.
+
+Pushing a tag like `v1.0.0` runs `.github/workflows/release.yml`. It builds all six targets on their own
+operating systems and attaches them to a GitHub release.
+
 ## Layout
 
 | Project | Contents |
 |---|---|
 | `src/Kimulator.Core` | 6502 core, opcode table, `MachineRunner` (real-time emulation thread), assembler, debugger/disassembler/symbols, expansion-card contract, paper tape / Intel HEX / WAV formats, audio sampling, teletype text buffer |
 | `src/Kimulator.Kim1` | 6530 RRIOT, KIM-1 board, KIM-2/3/4/5 cards, LED display model, bit-level TTY interface, cassette with PLL model, save states, embedded ROMs and monitor symbols |
-| `src/Kimulator.App` | Avalonia UI: board photo view, hotspot layout (`Assets/kim1-layout.json`), terminal, debugger, assembler, cassette and expansion windows, OpenAL audio, settings |
+| `src/Kimulator.App` | Avalonia UI: board photo view, hotspot layout (`Assets/kim1-layout.json`), terminal, debugger, assembler, cassette and expansion windows, OpenAL audio, key clicks, settings |
 | `tests/Kimulator.Tests` | CPU suites, interrupt timing, headless KIM-1 keypad and TTY monitor tests, file formats, save states, cassette round trips, debugger, disassembler and assembler |
+| `packaging/`, `scripts/` | macOS `Info.plist` and icon, Linux desktop entry and installer, packaging and test-data scripts |
 
 See [docs/PLAN.md](docs/PLAN.md) for the roadmap.
 
@@ -162,3 +215,4 @@ See [docs/PLAN.md](docs/PLAN.md) for the roadmap.
   [Hans Otten's KIM system products pages](http://retro.hansotten.nl/6502-sbc/kim-1-manuals-and-software/kim-system-products/).
 - [SingleStepTests/65x02](https://github.com/SingleStepTests/65x02) (MIT) and
   [Klaus Dormann's 6502 functional tests](https://github.com/Klaus2m5/6502_65C02_functional_tests) (GPL-3.0, the test binary only).
+- MP3 decoding by [NLayer](https://github.com/naudio/NLayer) (MIT); audio output by [Silk.NET](https://github.com/dotnet/Silk.NET) and OpenAL Soft (LGPL); the editor is [AvaloniaEdit](https://github.com/AvaloniaUI/AvaloniaEdit) (MIT).

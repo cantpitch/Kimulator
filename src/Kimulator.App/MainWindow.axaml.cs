@@ -41,8 +41,8 @@ public partial class MainWindow : Window
         InitializeComponent();
         _session = new EmulatorSession(_settings);
 
-        var layout = BoardLayout.Load(new Uri("avares://Kimulator.App/Assets/kim1-layout.json"));
-        using var imageStream = AssetLoader.Open(new Uri("avares://Kimulator.App/Assets/kim1-board.jpg"));
+        var layout = BoardLayout.Load(new Uri("avares://Kimulator/Assets/kim1-layout.json"));
+        using var imageStream = AssetLoader.Open(new Uri("avares://Kimulator/Assets/kim1-board.jpg"));
         _board = new BoardView
         {
             Layout = layout,
@@ -156,6 +156,7 @@ public partial class MainWindow : Window
 
         ApplySpeed(_settings.Speed);
 
+        KeyClickMenu.IsChecked = _settings.KeyClick;
         foreach (var item in SoundMenu.Items.OfType<MenuItem>())
         {
             if (item.Tag is not string tag) continue;
@@ -510,6 +511,9 @@ public partial class MainWindow : Window
         _settings.SoundSource = source;
         _session.SetSound(source, (float)_settings.Volume);
     }
+
+    private void OnToggleKeyClick(object? sender, RoutedEventArgs e) =>
+        _session.KeyClickEnabled = _settings.KeyClick = KeyClickMenu.IsChecked;
 
     private void OnVolume(object? sender, RoutedEventArgs e)
     {

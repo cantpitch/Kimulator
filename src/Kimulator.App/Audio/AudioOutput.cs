@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using Kimulator.Core.Audio;
 using Silk.NET.OpenAL;
 
@@ -11,12 +12,14 @@ namespace Kimulator.App.Audio;
 public sealed unsafe class AudioOutput : IDisposable
 {
     private const int BufferCount = 4;
-    private const int BufferSamples = 1024; // ~23 ms each at 44.1 kHz
+    private const int BufferSamples = 512; // ~12 ms each at 44.1 kHz, so clicks feel immediate
 
     private readonly AudioRing _ring;
     private readonly int _sampleRate;
     private readonly Thread _thread;
     private volatile bool _stop;
+    private readonly ConcurrentQueue<(float[] Samples, float Volume)> _newEffects = new();
+    private readonly List<(float[] Samples, float Volume, int Position)> _effects = [];
 
     public AudioOutput(AudioRing ring, int sampleRate)
     {
@@ -28,6 +31,12 @@ public sealed unsafe class AudioOutput : IDisposable
 
     /// <summary>Null while starting or when running fine; otherwise why sound is unavailable.</summary>
     public string? Error { get; private set; }
+
+    /// <summary>Mixes a one-shot sound (mono, at the output rate) over the emulator's audio. Any thread.</summary>
+    public void PlayEffect(float[] samples, float volume)
+    {
+        if (samples.Length > 0) _newEffects.Enqueue((samples, volume));
+    }
 
     public void Dispose()
     {
@@ -113,11 +122,20 @@ public sealed unsafe class AudioOutput : IDisposable
         if (_ring.Count > _sampleRate / 6) _ring.Trim(_sampleRate / 20);
 
         int n = _ring.Read(_floats);
-        for (int i = 0; i < BufferSamples; i++)
+        for (int i = n; i < BufferSamples; i++) _floats[i] = 0f;
+
+        while (_newEffects.TryDequeue(out var effect)) _effects.Add((effect.Samples, effect.Volume, 0));
+        for (int e = _effects.Count - 1; e >= 0; e--)
         {
-            float s = i < n ? _floats[i] : 0f;
-            _pcm[i] = (short)(Math.Clamp(s, -1f, 1f) * 32767f);
+            var (samples, volume, position) = _effects[e];
+            int count = Math.Min(BufferSamples, samples.Length - position);
+            for (int i = 0; i < count; i++) _floats[i] += samples[position + i] * volume;
+            if (position + count >= samples.Length) _effects.RemoveAt(e);
+            else _effects[e] = (samples, volume, position + count);
         }
+
+        for (int i = 0; i < BufferSamples; i++)
+            _pcm[i] = (short)(Math.Clamp(_floats[i], -1f, 1f) * 32767f);
 
         al.BufferData(buffer, BufferFormat.Mono16, _pcm, _sampleRate);
     }

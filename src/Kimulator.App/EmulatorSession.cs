@@ -26,6 +26,8 @@ public sealed class EmulatorSession : IDisposable
     private const long CalibrationDelayCycles = 20_000;
 
     private readonly Dictionary<Kim1Key, long> _pressedAt = [];
+    private readonly KeyClickSound? _keyClick;
+    private float _volume;
     private readonly ConcurrentQueue<byte> _ttyOutput = new();
 
     public EmulatorSession(AppSettings settings)
@@ -39,6 +41,16 @@ public sealed class EmulatorSession : IDisposable
         Board.Speaker.Volume = (float)settings.Volume;
         Board.Cassette.AutoStopSilenceSeconds = settings.CassetteAutoStop ? 2.0 : 0;
         Audio = new AudioOutput(Board.Speaker.Output, Board.Speaker.SampleRate);
+        KeyClickEnabled = settings.KeyClick;
+        _volume = (float)settings.Volume;
+        try
+        {
+            _keyClick = KeyClickSound.Load(Board.Speaker.SampleRate);
+        }
+        catch (Exception)
+        {
+            _keyClick = null; // the emulator works fine without the click (e.g. an unreadable MP3)
+        }
         try
         {
             Board.SetCards(settings.Expansion.Build(File.ReadAllBytes));
@@ -68,6 +80,9 @@ public sealed class EmulatorSession : IDisposable
 
     /// <summary>Plays <see cref="Kim1Board.Speaker"/> on the default sound device.</summary>
     public AudioOutput Audio { get; }
+
+    /// <summary>Click when keypad keys go down and up.</summary>
+    public bool KeyClickEnabled { get; set; }
 
     public MachineRunner Runner { get; }
 
@@ -199,6 +214,9 @@ public sealed class EmulatorSession : IDisposable
 
     public void SetKey(Kim1Key key, bool down)
     {
+        if (KeyClickEnabled && _keyClick is not null)
+            Audio.PlayEffect(down ? _keyClick.Press : _keyClick.Release, Math.Max(_volume, 0.25f));
+
         if (down)
         {
             _pressedAt[key] = Stopwatch.GetTimestamp();
@@ -307,11 +325,15 @@ public sealed class EmulatorSession : IDisposable
 
     // ---------------------------------------------------------------- sound and cassette
 
-    public void SetSound(SoundSource source, float volume) => Runner.Post(() =>
+    public void SetSound(SoundSource source, float volume)
     {
-        Board.SoundSource = source;
-        Board.Speaker.Volume = volume;
-    });
+        _volume = volume;
+        Runner.Post(() =>
+        {
+            Board.SoundSource = source;
+            Board.Speaker.Volume = volume;
+        });
+    }
 
     public Task<CassetteStatus> CassetteStatusAsync() => Runner.InvokeAsync(() =>
     {
