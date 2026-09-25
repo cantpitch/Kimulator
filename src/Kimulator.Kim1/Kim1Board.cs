@@ -1,5 +1,6 @@
 using Kimulator.Core.Bus;
 using Kimulator.Core.Cpu;
+using Kimulator.Core.Debugging;
 using Kimulator.Core.Machine;
 
 namespace Kimulator.Kim1;
@@ -38,6 +39,7 @@ public sealed class Kim1Board : ICpuBus, IMachine
         Riot002 = new Riot6530("6530-002 (U2)", rom002) { PortAInput = KeypadPortA };
         Riot003 = new Riot6530("6530-003 (U3)", rom003);
         Tty = new TtyInterface(ClockHz);
+        Debugger = new Debugger(Cpu, Peek);
         Riot002.PortsChanged += OnRiot002PortsChanged;
     }
 
@@ -45,6 +47,11 @@ public sealed class Kim1Board : ICpuBus, IMachine
     public static Kim1Board CreateWithDefaultRoms() => new(LoadRom("6530-002.bin"), LoadRom("6530-003.bin"));
 
     public Cpu6502 Cpu { get; }
+
+    public Debugger Debugger { get; }
+
+    /// <summary>Labels for the monitor ROM and its RAM/I-O locations.</summary>
+    public static SymbolTable MonitorSymbols { get; } = LoadSymbols();
 
     /// <summary>U2: monitor ROM $1C00-$1FFF, RAM $17C0-$17FF, I/O+timer $1740-$177F (keypad, display, TTY, tape).</summary>
     public Riot6530 Riot002 { get; }
@@ -148,15 +155,26 @@ public sealed class Kim1Board : ICpuBus, IMachine
                 continue;
             }
 
-            Cpu.Step();
-            CheckFrame();
+            if (Debugger.ShouldStopBefore()) return;
+            ExecuteOne();
+            if (Debugger.StopRequested) return;
         }
     }
 
-    /// <summary>Runs exactly one instruction (or interrupt sequence). Returns cycles used.</summary>
+    /// <summary>Runs exactly one instruction (or interrupt sequence), ignoring breakpoints. Returns cycles used.</summary>
     public int StepInstruction()
     {
+        if (_resetHeld) return 0;
+        return ExecuteOne();
+    }
+
+    private int ExecuteOne()
+    {
+        ushort pc = Cpu.PC;
+        bool interrupt = Cpu.InterruptPending;
+        byte opcode = Peek(pc);
         int cycles = Cpu.Step();
+        Debugger.AfterInstruction(pc, opcode, interrupt);
         CheckFrame();
         return cycles;
     }
@@ -172,6 +190,7 @@ public sealed class Kim1Board : ICpuBus, IMachine
         UpdateInterruptLines(sstNmi);
 
         _dataBus = DecodeRead(address);
+        if (Debugger.WatchesBus) Debugger.OnRead(address, _dataBus, sync, _cycles);
         return _dataBus;
     }
 
@@ -181,6 +200,7 @@ public sealed class Kim1Board : ICpuBus, IMachine
         UpdateInterruptLines(false);
         _dataBus = value;
         DecodeWrite(address, value);
+        if (Debugger.WatchesBus) Debugger.OnWrite(address, value, _cycles);
     }
 
     /// <summary>Reads memory as the CPU would see it, without side effects on I/O timers or clocks.</summary>
@@ -195,18 +215,26 @@ public sealed class Kim1Board : ICpuBus, IMachine
         return (a >> 10) switch
         {
             0 => _ram[a & 0x3FF],
-            5 when a >= 0x1780 => a >= 0x17C0 ? Riot002.ReadRam(a) : Riot003.ReadRam(a),
+            5 when a >= 0x1700 => (a & 0xC0) switch
+            {
+                0x00 => Riot003.PeekIo(a),
+                0x40 => Riot002.PeekIo(a),
+                0x80 => Riot003.ReadRam(a),
+                _ => Riot002.ReadRam(a),
+            },
             6 => Riot003.ReadRom(a),
             7 => Riot002.ReadRom(a),
             _ => 0xFF,
         };
     }
 
-    /// <summary>Writes RAM directly (no bus cycle). Writes to ROM/I/O are ignored.</summary>
+    /// <summary>Writes RAM or an I/O register directly (no bus cycle). Writes to ROM are ignored.</summary>
     public void Poke(ushort address, byte value)
     {
         int a = address & 0x1FFF;
         if (a < 0x0400) _ram[a] = value;
+        else if (a is >= 0x1700 and < 0x1740) Riot003.WriteIo(a, value);
+        else if (a is >= 0x1740 and < 0x1780) Riot002.WriteIo(a, value);
         else if (a is >= 0x1780 and < 0x17C0) Riot003.WriteRam(a, value);
         else if (a is >= 0x17C0 and < 0x1800) Riot002.WriteRam(a, value);
         else
@@ -446,6 +474,14 @@ public sealed class Kim1Board : ICpuBus, IMachine
         if (_cycles < _nextFrameCycle) return;
         Display.EndFrame(_cycles);
         _nextFrameCycle = _cycles + CyclesPerFrame;
+    }
+
+    private static SymbolTable LoadSymbols()
+    {
+        using var stream = typeof(Kim1Board).Assembly.GetManifestResourceStream("Kimulator.Kim1.Symbols.kim1-monitor.sym")
+            ?? throw new InvalidOperationException("Embedded monitor symbols not found.");
+        using var reader = new StreamReader(stream);
+        return SymbolTable.Parse(reader.ReadToEnd());
     }
 
     private static byte[] LoadRom(string name)

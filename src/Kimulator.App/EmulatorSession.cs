@@ -1,6 +1,8 @@
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using Avalonia.Threading;
+using Kimulator.App.Debugging;
+using Kimulator.Core.Debugging;
 using Kimulator.Core.Formats;
 using Kimulator.Core.Machine;
 using Kimulator.Core.Terminal;
@@ -33,6 +35,16 @@ public sealed class EmulatorSession : IDisposable
         PresetInterruptVectors = settings.PresetInterruptVectors;
         AutoCalibrateTty = settings.AutoCalibrateTty;
         Runner = new MachineRunner(Board);
+        Runner.Stopped += stop => Dispatcher.UIThread.Post(() =>
+        {
+            LastStop = stop;
+            Stopped?.Invoke(stop);
+        });
+        Runner.Resumed += () => Dispatcher.UIThread.Post(() =>
+        {
+            LastStop = null;
+            Resumed?.Invoke();
+        });
         PowerCycle();
         Runner.Start();
     }
@@ -60,6 +72,53 @@ public sealed class EmulatorSession : IDisposable
 
     /// <summary>Raised on the UI thread after <see cref="PumpTerminal"/> added text to <see cref="Transcript"/>.</summary>
     public event Action? TranscriptChanged;
+
+    /// <summary>Raised on the UI thread when execution stops (breakpoint, step, pause).</summary>
+    public event Action<StopInfo>? Stopped;
+
+    /// <summary>Raised on the UI thread when execution continues.</summary>
+    public event Action? Resumed;
+
+    /// <summary>Why execution is stopped, or null while running. UI thread.</summary>
+    public StopInfo? LastStop { get; private set; }
+
+    public bool IsStopped => LastStop is not null;
+
+    // ---------------------------------------------------------------- debugging
+
+    public Task<DebugSnapshot> CaptureAsync() => Runner.InvokeAsync(() =>
+    {
+        var cpu = Board.Cpu;
+        var memory = new byte[0x10000];
+        for (int a = 0; a < memory.Length; a++) memory[a] = Board.Peek((ushort)a);
+        var dbg = Board.Debugger;
+        return new DebugSnapshot(cpu.A, cpu.X, cpu.Y, cpu.S, cpu.P, cpu.PC, Board.Cycles, cpu.Jammed, cpu.InterruptPending,
+            memory, [.. dbg.Breakpoints], dbg.BreakOnBrk, dbg.BreakOnJam, dbg.BusTraceEnabled);
+    });
+
+    /// <summary>Runs <paramref name="action"/> against the debugger on the emulation thread.</summary>
+    public Task WithDebuggerAsync(Action<Core.Debugging.Debugger> action) =>
+        Runner.InvokeAsync(() => { action(Board.Debugger); return true; });
+
+    public Task<T> WithDebuggerAsync<T>(Func<Core.Debugging.Debugger, T> func) => Runner.InvokeAsync(() => func(Board.Debugger));
+
+    public Task SetRegistersAsync(byte a, byte x, byte y, byte s, byte p, ushort pc) => Runner.InvokeAsync(() =>
+    {
+        var cpu = Board.Cpu;
+        cpu.A = a;
+        cpu.X = x;
+        cpu.Y = y;
+        cpu.S = s;
+        cpu.P = p;
+        cpu.PC = pc;
+        return true;
+    });
+
+    public Task PokeAsync(ushort address, byte value) => Runner.InvokeAsync(() =>
+    {
+        Board.Poke(address, value);
+        return true;
+    });
 
     public void PowerCycle() => Runner.Post(() =>
     {

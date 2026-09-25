@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using System.Diagnostics;
+using Kimulator.Core.Debugging;
 
 namespace Kimulator.Core.Machine;
 
@@ -47,6 +48,75 @@ public sealed class MachineRunner : IDisposable
 
     /// <summary>Raised on the emulation thread when an exception escapes the machine; the runner pauses.</summary>
     public event Action<Exception>? Faulted;
+
+    /// <summary>Raised on the emulation thread whenever execution stops (breakpoint, step, pause).</summary>
+    public event Action<StopInfo>? Stopped;
+
+    /// <summary>Raised on the emulation thread when execution resumes after a stop.</summary>
+    public event Action? Resumed;
+
+    // ---------------------------------------------------------------- debugging commands
+
+    /// <summary>Stops execution between instructions.</summary>
+    public void Pause() => Post(() =>
+    {
+        if (_paused) return;
+        _paused = true;
+        _machine.Debugger.CancelRunModes();
+        Stopped?.Invoke(new StopInfo(StopReason.Paused, _machine.Cpu.PC, "Paused"));
+    });
+
+    /// <summary>Continues after a stop; a breakpoint at the current PC is not hit again immediately.</summary>
+    public void Resume() => Post(() =>
+    {
+        _machine.Debugger.CancelRunModes();
+        _machine.Debugger.PrepareResume();
+        Continue();
+    });
+
+    /// <summary>Executes one instruction (only while stopped).</summary>
+    public void StepInstruction() => Post(() =>
+    {
+        if (!_paused) return;
+        SingleStep();
+    });
+
+    /// <summary>Steps over a JSR (runs the whole subroutine); other instructions are single-stepped.</summary>
+    public void StepOver() => Post(() =>
+    {
+        if (!_paused) return;
+        if (_machine.Debugger.BeginStepOver()) Continue();
+        else SingleStep();
+    });
+
+    /// <summary>Runs until the current subroutine returns.</summary>
+    public void StepOut() => Post(() =>
+    {
+        if (!_paused) return;
+        _machine.Debugger.BeginStepOut();
+        Continue();
+    });
+
+    /// <summary>Runs until execution reaches <paramref name="address"/> (or another stop).</summary>
+    public void RunTo(ushort address) => Post(() =>
+    {
+        _machine.Debugger.BeginRunTo(address);
+        Continue();
+    });
+
+    private void SingleStep()
+    {
+        _machine.StepInstruction();
+        var stop = _machine.Debugger.TakeStop(); // e.g. a watchpoint hit by this instruction
+        Stopped?.Invoke(stop ?? new StopInfo(StopReason.Step, _machine.Cpu.PC, "Stepped"));
+    }
+
+    private void Continue()
+    {
+        _paused = false;
+        _wake.Set();
+        Resumed?.Invoke();
+    }
 
     /// <summary>Queues an action to run on the emulation thread.</summary>
     public void Post(Action action)
@@ -122,6 +192,7 @@ public sealed class MachineRunner : IDisposable
                 if (Unthrottled)
                 {
                     _machine.RunUntil(_machine.Cycles + Math.Max(1, (long)(_machine.ClockHz * SliceSeconds * 10)));
+                    CheckForStop();
                     baseSeconds = clock.Elapsed.TotalSeconds;
                     baseCycles = _machine.Cycles;
                     continue;
@@ -141,6 +212,8 @@ public sealed class MachineRunner : IDisposable
                     _machine.RunUntil(Math.Min(target, _machine.Cycles + Math.Max(1, sliceCycles)));
                 else
                     _wake.WaitOne(1);
+
+                CheckForStop();
             }
             catch (Exception ex)
             {
@@ -150,6 +223,13 @@ public sealed class MachineRunner : IDisposable
         }
 
         DrainCommands();
+    }
+
+    private void CheckForStop()
+    {
+        if (_machine.Debugger.TakeStop() is not { } stop) return;
+        _paused = true;
+        Stopped?.Invoke(stop);
     }
 
     private void DrainCommands()

@@ -31,6 +31,7 @@ Add `-- --compact` to start with only the display and keypad.
 | Ctrl+O / Ctrl+M | load program / save memory range (`.ptp`, `.hex`, `.bin`) |
 | Ctrl+S / Ctrl+L, F6 / F7 | save / load state, quick save / quick load |
 | Ctrl+T | terminal (TTY) window |
+| Ctrl+D | debugger |
 | Ctrl+1 / Ctrl+2 | full board / compact view |
 
 By default, power-on points the NMI and IRQ vectors (`$17FA`, `$17FE`) at the monitor (`$1C00`) so ST, SST
@@ -53,6 +54,21 @@ What you can use there:
 the monitor's open cell, so GO runs the program. Settings such as view, window placement, speed, TTY mode and
 baud rate are saved in `%APPDATA%\Kimulator` on Windows or `~/.config/Kimulator` on macOS and Linux.
 
+## Debugger
+
+**View › Debugger** (Ctrl+D) opens a debugger for the running machine:
+- Disassembly with the monitor's own labels (`SCAND`, `OUTCH`, …) and undocumented opcodes highlighted.
+  Click the gutter to set a breakpoint.
+- F5 continue/pause, F11 step, F10 step over (runs a JSR as one step), Shift+F11 step out, Ctrl+F10 run to
+  the selected line, F9 toggle a breakpoint.
+- Editable registers and flags while stopped, and a stack view.
+- A memory hex editor that highlights bytes changed since the last stop.
+- Execute breakpoints, read/write watchpoints over address ranges, and stop on BRK or JAM.
+- A trace of the last 4096 bus cycles (read, opcode fetch, write), plus a history of recently executed instructions.
+
+Stepping works one instruction at a time. For cycle-level detail, use the bus trace. When a breakpoint hits, the
+whole machine stops and the LED display freezes on its last frame.
+
 ## Test
 
 ```bash
@@ -66,10 +82,10 @@ The Harte tests skip themselves when the data is missing.
 
 | Project | Contents |
 |---|---|
-| `src/Kimulator.Core` | 6502 core, opcode table, `MachineRunner` (real-time emulation thread), expansion-card contract, paper tape / Intel HEX formats, teletype text buffer |
-| `src/Kimulator.Kim1` | 6530 RRIOT, KIM-1 board, LED display model, bit-level TTY interface, save states, embedded ROMs |
-| `src/Kimulator.App` | Avalonia UI: board photo view, hotspot layout (`Assets/kim1-layout.json`), terminal window, settings |
-| `tests/Kimulator.Tests` | CPU suites, interrupt timing, headless KIM-1 keypad and TTY monitor tests, file formats, save states |
+| `src/Kimulator.Core` | 6502 core, opcode table, `MachineRunner` (real-time emulation thread), debugger/disassembler/symbols, expansion-card contract, paper tape / Intel HEX formats, teletype text buffer |
+| `src/Kimulator.Kim1` | 6530 RRIOT, KIM-1 board, LED display model, bit-level TTY interface, save states, embedded ROMs and monitor symbols |
+| `src/Kimulator.App` | Avalonia UI: board photo view, hotspot layout (`Assets/kim1-layout.json`), terminal and debugger windows, settings |
+| `tests/Kimulator.Tests` | CPU suites, interrupt timing, headless KIM-1 keypad and TTY monitor tests, file formats, save states, debugger and disassembler |
 
 See [docs/PLAN.md](docs/PLAN.md) for the roadmap.
 

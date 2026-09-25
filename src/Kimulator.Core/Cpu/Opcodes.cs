@@ -43,10 +43,13 @@ public enum OperationKind : byte
 
 public readonly record struct OpcodeInfo(byte Opcode, Mnemonic Mnemonic, AddressingMode Mode, bool Undocumented, OperationKind Kind)
 {
-    /// <summary>Instruction length in bytes, including the opcode.</summary>
+    /// <summary>
+    /// Instruction length in bytes, including the opcode. BRK counts as 1 byte, as assemblers write it,
+    /// although the CPU skips a padding byte after it when returning.
+    /// </summary>
     public int Length => Mode switch
     {
-        AddressingMode.Implied or AddressingMode.Accumulator => Mnemonic == Mnemonic.BRK ? 2 : 1,
+        AddressingMode.Implied or AddressingMode.Accumulator => 1,
         AddressingMode.Absolute or AddressingMode.AbsoluteX or AddressingMode.AbsoluteY or AddressingMode.Indirect => 3,
         _ => 2,
     };

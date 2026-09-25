@@ -112,6 +112,24 @@ public sealed class Riot6530
         return TimerInterruptFlag ? (byte)0x80 : (byte)0x00;
     }
 
+    /// <summary>Reads an I/O / timer register without the side effects of a real read (for debuggers).</summary>
+    public byte PeekIo(int offset)
+    {
+        offset &= 0x0F;
+        if ((offset & 0x04) == 0)
+        {
+            return (offset & 0x03) switch
+            {
+                0 => PortAPins,
+                1 => PortADirection,
+                2 => PortBPins,
+                _ => PortBDirection,
+            };
+        }
+
+        return (offset & 0x01) == 0 ? _timer : TimerInterruptFlag ? (byte)0x80 : (byte)0x00;
+    }
+
     /// <summary>Writes an I/O / timer register. <paramref name="offset"/> is A0-A3.</summary>
     public void WriteIo(int offset, byte value)
     {

@@ -1,0 +1,149 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:dbg="using:Kimulator.App.Debugging"
+        x:Class="Kimulator.App.Debugging.DebuggerWindow"
+        Title="KIM-1 Debugger"
+        Width="1120" Height="800"
+        Background="#161616">
+    <Window.Styles>
+        <Style Selector="TextBox.hex">
+            <Setter Property="FontFamily" Value="Consolas, Menlo, DejaVu Sans Mono, monospace" />
+            <Setter Property="MinWidth" Value="0" />
+            <Setter Property="Padding" Value="6,3" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+        </Style>
+        <Style Selector="TextBlock.label">
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="Foreground" Value="#A0A0A0" />
+        </Style>
+        <Style Selector="TabItem">
+            <Setter Property="FontSize" Value="15" />
+            <Setter Property="MinHeight" Value="34" />
+            <Setter Property="Padding" Value="12,4" />
+        </Style>
+        <Style Selector="Button.tool">
+            <Setter Property="Padding" Value="10,4" />
+        </Style>
+    </Window.Styles>
+
+    <Grid RowDefinitions="Auto,*,4,280">
+        <!-- Toolbar -->
+        <Border Grid.Row="0" Background="#1E1E1E" Padding="8,6">
+            <DockPanel>
+                <TextBlock x:Name="StatusText" DockPanel.Dock="Right" VerticalAlignment="Center" Foreground="#E0C050" Margin="12,0,4,0" />
+                <StackPanel Orientation="Horizontal" Spacing="6">
+                    <Button x:Name="RunPauseButton" Classes="tool" Click="OnRunPause" ToolTip.Tip="Continue / pause (F5)" MinWidth="104" />
+                    <Button x:Name="StepButton" Classes="tool" Content="Step" Click="OnStep" ToolTip.Tip="Execute one instruction (F11)" />
+                    <Button x:Name="StepOverButton" Classes="tool" Content="Step over" Click="OnStepOver" ToolTip.Tip="Run a JSR as one step (F10)" />
+                    <Button x:Name="StepOutButton" Classes="tool" Content="Step out" Click="OnStepOut" ToolTip.Tip="Run until the current subroutine returns (Shift+F11)" />
+                    <Button x:Name="RunToButton" Classes="tool" Content="Run to cursor" Click="OnRunToCursor" ToolTip.Tip="Run until the selected line (Ctrl+F10)" />
+                    <Button Classes="tool" Content="Toggle breakpoint" Click="OnToggleBreakpoint" ToolTip.Tip="On the selected line (F9); or click the gutter" />
+                    <Border Width="12" />
+                    <TextBlock Classes="label" Text="Go to" />
+                    <TextBox x:Name="GotoBox" Classes="hex" Width="130" PlaceholderText="addr or label" KeyDown="OnGotoKeyDown" />
+                    <Button Classes="tool" Content="PC" Click="OnFollowPc" ToolTip.Tip="Show the current instruction" />
+                </StackPanel>
+            </DockPanel>
+        </Border>
+
+        <!-- Disassembly | registers -->
+        <Grid Grid.Row="1" ColumnDefinitions="*,4,340">
+            <dbg:DisassemblyView x:Name="Disassembly" Grid.Column="0" />
+            <GridSplitter Grid.Column="1" Background="#101010" ResizeDirection="Columns" />
+            <ScrollViewer Grid.Column="2" Background="#1A1A1A">
+                <StackPanel Margin="12" Spacing="10">
+                    <TextBlock Text="Registers" FontWeight="SemiBold" />
+                    <Grid ColumnDefinitions="Auto,*,Auto,*" RowDefinitions="Auto,Auto,Auto" ColumnSpacing="8" RowSpacing="6">
+                        <TextBlock Classes="label" Text="A" />
+                        <TextBox x:Name="RegA" Grid.Column="1" Classes="hex" MaxLength="2" />
+                        <TextBlock Classes="label" Grid.Column="2" Text="PC" />
+                        <TextBox x:Name="RegPC" Grid.Column="3" Classes="hex" MaxLength="4" />
+                        <TextBlock Classes="label" Grid.Row="1" Text="X" />
+                        <TextBox x:Name="RegX" Grid.Row="1" Grid.Column="1" Classes="hex" MaxLength="2" />
+                        <TextBlock Classes="label" Grid.Row="1" Grid.Column="2" Text="S" />
+                        <TextBox x:Name="RegS" Grid.Row="1" Grid.Column="3" Classes="hex" MaxLength="2" />
+                        <TextBlock Classes="label" Grid.Row="2" Text="Y" />
+                        <TextBox x:Name="RegY" Grid.Row="2" Grid.Column="1" Classes="hex" MaxLength="2" />
+                        <TextBlock Classes="label" Grid.Row="2" Grid.Column="2" Text="P" />
+                        <TextBlock x:Name="RegP" Grid.Row="2" Grid.Column="3" VerticalAlignment="Center"
+                                   FontFamily="Consolas, Menlo, DejaVu Sans Mono, monospace" />
+                    </Grid>
+                    <StackPanel Orientation="Horizontal" Spacing="2">
+                        <CheckBox x:Name="FlagN" Content="N" Tag="128" Click="OnFlagClicked" MinWidth="44" />
+                        <CheckBox x:Name="FlagV" Content="V" Tag="64" Click="OnFlagClicked" MinWidth="44" />
+                        <CheckBox x:Name="FlagD" Content="D" Tag="8" Click="OnFlagClicked" MinWidth="44" />
+                        <CheckBox x:Name="FlagI" Content="I" Tag="4" Click="OnFlagClicked" MinWidth="44" />
+                        <CheckBox x:Name="FlagZ" Content="Z" Tag="2" Click="OnFlagClicked" MinWidth="44" />
+                        <CheckBox x:Name="FlagC" Content="C" Tag="1" Click="OnFlagClicked" MinWidth="44" />
+                    </StackPanel>
+                    <TextBlock x:Name="CyclesText" Classes="label" />
+                    <TextBlock x:Name="RegisterHint" Classes="label" FontSize="12" TextWrapping="Wrap"
+                               Text="Pause to edit registers. Type a value and press Enter." />
+                    <TextBlock Text="Stack" FontWeight="SemiBold" Margin="0,6,0,0" />
+                    <TextBlock x:Name="StackText" FontFamily="Consolas, Menlo, DejaVu Sans Mono, monospace" Foreground="#C8C8C8" />
+                </StackPanel>
+            </ScrollViewer>
+        </Grid>
+
+        <GridSplitter Grid.Row="2" Background="#101010" ResizeDirection="Rows" />
+
+        <!-- Memory / breakpoints / trace -->
+        <TabControl Grid.Row="3" Padding="0">
+            <TabItem Header="Memory">
+                <DockPanel>
+                    <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="6" Margin="8,4">
+                        <TextBlock Classes="label" Text="Address" />
+                        <TextBox x:Name="MemoryGotoBox" Classes="hex" Width="130" PlaceholderText="addr or label" KeyDown="OnMemoryGotoKeyDown" />
+                        <TextBlock Classes="label" FontSize="12" Text="Select a byte and type hex digits to change it. Red = changed since the last stop." />
+                    </StackPanel>
+                    <Grid ColumnDefinitions="*,Auto">
+                        <dbg:HexView x:Name="Memory" />
+                        <ScrollBar x:Name="MemoryScroll" Grid.Column="1" Orientation="Vertical" Minimum="0" />
+                    </Grid>
+                </DockPanel>
+            </TabItem>
+            <TabItem Header="Breakpoints">
+                <DockPanel Margin="8">
+                    <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="6">
+                        <TextBox x:Name="BreakpointAddressBox" Classes="hex" Width="200" PlaceholderText="0200, 0200-02FF, SCAND" KeyDown="OnBreakpointAddressKeyDown" />
+                        <ComboBox x:Name="BreakpointKindBox" Width="150" SelectedIndex="0">
+                            <ComboBoxItem Content="Execute" />
+                            <ComboBoxItem Content="Read" />
+                            <ComboBoxItem Content="Write" />
+                            <ComboBoxItem Content="Read or write" />
+                        </ComboBox>
+                        <Button Content="Add" Click="OnAddBreakpoint" />
+                        <Border Width="16" />
+                        <CheckBox x:Name="BreakOnBrkBox" Content="Stop on BRK" Click="OnBreakOptionClicked" />
+                        <CheckBox x:Name="BreakOnJamBox" Content="Stop on JAM" Click="OnBreakOptionClicked" />
+                    </StackPanel>
+                    <TextBlock x:Name="BreakpointError" DockPanel.Dock="Top" Foreground="OrangeRed" IsVisible="False" Margin="0,4,0,0" />
+                    <ListBox x:Name="BreakpointList" Margin="0,8,0,0" Background="#141414">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate x:DataType="dbg:BreakpointItem">
+                                <DockPanel>
+                                    <Button DockPanel.Dock="Right" Content="Remove" Tag="{Binding Id}" Click="OnRemoveBreakpoint" Padding="8,2" />
+                                    <CheckBox IsChecked="{Binding Enabled, Mode=OneWay}" Tag="{Binding Id}" Click="OnBreakpointEnabledClicked"
+                                              Content="{Binding Description}" FontFamily="Consolas, Menlo, DejaVu Sans Mono, monospace" />
+                                </DockPanel>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                </DockPanel>
+            </TabItem>
+            <TabItem Header="Trace">
+                <DockPanel Margin="8">
+                    <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="10">
+                        <CheckBox x:Name="BusTraceBox" Content="Record bus cycles (last 4096)" Click="OnBusTraceClicked" />
+                        <Button Content="Refresh" Click="OnRefreshTrace" />
+                        <TextBlock Classes="label" FontSize="12" Text="R = read, F = opcode fetch (SYNC), W = write. Instruction history is always kept." />
+                    </StackPanel>
+                    <Grid ColumnDefinitions="*,8,*" Margin="0,8,0,0">
+                        <TextBox x:Name="BusTraceText" IsReadOnly="True" AcceptsReturn="True" Classes="hex" FontSize="13" />
+                        <TextBox x:Name="HistoryText" Grid.Column="2" IsReadOnly="True" AcceptsReturn="True" Classes="hex" FontSize="13" />
+                    </Grid>
+                </DockPanel>
+            </TabItem>
+        </TabControl>
+    </Grid>
+</Window>

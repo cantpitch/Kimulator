@@ -7,6 +7,7 @@ using Avalonia.Media.Imaging;
 using Avalonia.Platform;
 using Avalonia.Threading;
 using Kimulator.App.Board;
+using Kimulator.App.Debugging;
 using Kimulator.App.Dialogs;
 using Kimulator.App.Terminal;
 using Kimulator.Kim1;
@@ -24,6 +25,7 @@ public partial class MainWindow : Window
     private readonly DispatcherTimer _frameTimer;
     private readonly HashSet<Key> _heldKeys = [];
     private TerminalWindow? _terminal;
+    private DebuggerWindow? _debugger;
     private long _lastStatusCycles;
     private DateTime _lastStatusTime = DateTime.UtcNow;
     private ushort _lastSaveStart = 0x0200, _lastSaveEnd = 0x03FF, _lastBinaryAddress = 0x0200;
@@ -53,6 +55,12 @@ public partial class MainWindow : Window
         Deactivated += (_, _) => ReleaseHeldKeys();
 
         _session.Runner.Faulted += ex => Dispatcher.UIThread.Post(() => ShowStatus($"Emulation stopped: {ex.Message}"));
+        _session.Stopped += stop =>
+        {
+            ShowStatus($"Stopped — {stop.Message}. Debugger: F5 continues.");
+            if (stop.Reason is not (Core.Debugging.StopReason.Paused or Core.Debugging.StopReason.Step)) ShowDebugger();
+        };
+        _session.Resumed += () => ShowStatus("");
 
         _frameTimer = new DispatcherTimer(TimeSpan.FromMilliseconds(15), DispatcherPriority.Render, OnFrame);
         _frameTimer.Start();
@@ -61,6 +69,8 @@ public partial class MainWindow : Window
             Opened += (_, _) => Dispatcher.UIThread.Post(() => SetView(compact: true), DispatcherPriority.Loaded);
         if (_settings.TerminalOpen || _settings.TtyMode)
             Opened += (_, _) => ShowTerminal();
+        if (Environment.GetCommandLineArgs().Contains("--debugger"))
+            Opened += (_, _) => ShowDebugger();
     }
 
     protected override void OnClosing(WindowClosingEventArgs e)
@@ -76,6 +86,7 @@ public partial class MainWindow : Window
 
         _settings.Save();
         _terminal?.Close();
+        _debugger?.Close();
         base.OnClosing(e);
     }
 
@@ -172,6 +183,7 @@ public partial class MainWindow : Window
                 case Key.S: OnSaveState(null, e); break;
                 case Key.L: OnLoadState(null, e); break;
                 case Key.T: ShowTerminal(); break;
+                case Key.D: ShowDebugger(); break;
                 default: e.Handled = false; break;
             }
 
@@ -424,6 +436,21 @@ public partial class MainWindow : Window
         _terminal = new TerminalWindow(_session, _settings, SetTtyModeAsync);
         _terminal.Closed += (_, _) => _terminal = null;
         _terminal.Show(this);
+    }
+
+    private void OnShowDebugger(object? sender, RoutedEventArgs e) => ShowDebugger();
+
+    private void ShowDebugger()
+    {
+        if (_debugger is not null)
+        {
+            _debugger.Activate();
+            return;
+        }
+
+        _debugger = new DebuggerWindow(_session);
+        _debugger.Closed += (_, _) => _debugger = null;
+        _debugger.Show(this);
     }
 
     private async void OnShowKeys(object? sender, RoutedEventArgs e)

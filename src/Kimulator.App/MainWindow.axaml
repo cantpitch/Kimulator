@@ -41,6 +41,7 @@
                 <MenuItem x:Name="CompactViewMenu" Header="_Compact (display and keypad)" ToggleType="Radio" GroupName="View" InputGesture="Ctrl+2" Click="OnCompactView" />
                 <Separator />
                 <MenuItem Header="_Terminal (TTY)" InputGesture="Ctrl+T" Click="OnShowTerminal" />
+                <MenuItem Header="_Debugger" InputGesture="Ctrl+D" Click="OnShowDebugger" />
             </MenuItem>
             <MenuItem Header="_Help">
                 <MenuItem Header="_Keyboard shortcuts" Click="OnShowKeys" />
