@@ -8,12 +8,16 @@
 #   osx-arm64, osx-x64       dist/Kimulator-<version>-<rid>.zip      Kimulator.app
 #                            dist/Kimulator-<version>-<rid>.dmg      (only when built on macOS, which also signs ad hoc)
 #
+# The version comes from <Version> in the project, or from KIMULATOR_VERSION when it is set. The release
+# workflow sets it from the tag, so tag v1.2.0 builds 1.2.0 (a leading "v" is dropped).
+#
 # Needs the .NET 10 SDK and python3 (for archives that keep execute permissions on any host).
 set -euo pipefail
 
 root="$(cd "$(dirname "$0")/.." && pwd)"
 project="$root/src/Kimulator.App/Kimulator.App.csproj"
-version="$(sed -n 's:.*<Version>\(.*\)</Version>.*:\1:p' "$project" | head -1)"
+version="${KIMULATOR_VERSION:-$(sed -n 's:.*<Version>\(.*\)</Version>.*:\1:p' "$project" | head -1)}"
+version="${version#v}"
 dist="$root/dist"
 work="$root/artifacts/package"
 python="$(command -v python3 || command -v python)"
@@ -29,7 +33,7 @@ default_rid() {
 }
 
 publish() { # rid out single-file
-    dotnet publish "$project" -c Release -r "$1" --self-contained true \
+    dotnet publish "$project" -c Release -r "$1" --self-contained true -p:Version="$version" \
         -p:PublishSingleFile="$3" -p:IncludeNativeLibrariesForSelfExtract=true -p:EnableCompressionInSingleFile="$3" \
         -p:DebugType=none -p:DebugSymbols=false -o "$2" >/dev/null
     find "$2" -name '*.pdb' -delete # native packages ship debug symbols we don't need

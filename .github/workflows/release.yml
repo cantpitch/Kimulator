@@ -36,6 +36,9 @@ jobs:
 
       - name: Package
         shell: bash
+        env:
+          # A tag like v1.2.0 names the packages and sets the app's version; other runs use the project's <Version>.
+          KIMULATOR_VERSION: ${{ github.ref_type == 'tag' && github.ref_name || '' }}
         run: ./scripts/package.sh ${{ matrix.rids }}
 
       - uses: actions/upload-artifact@v4
