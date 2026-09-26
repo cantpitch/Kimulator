@@ -4,9 +4,9 @@ A cross-platform (Windows, macOS, Linux) KIM-1 emulator in .NET 10 and Avalonia.
 of a real KIM-1, and the keys, the SST switch and the LED display on the photo all work.
 
 <p align="center">
-  <img src="docs/screenshots/main.jpg" alt="The KIM-1 board running a program that shows C0DE on its LED display" width="440">
+  <img src="docs/screenshots/main.jpg" alt="The KIM-1 board running a program that shows C0DE on its LED display, with the installed cards listed underneath" width="440">
   &nbsp;
-  <img src="docs/screenshots/compact.jpg" alt="Compact view: only the display and keypad" width="252">
+  <img src="docs/screenshots/compact.jpg" alt="Compact view: only the display and keypad, with the installed cards listed underneath" width="328">
 </p>
 
 - **Cycle-accurate NMOS 6502**, including the undocumented opcodes and NMOS decimal-mode behavior. It passes
@@ -165,8 +165,11 @@ address the way you would on the real card: click its DIP switches.
 Without a KIM-4, one card can be cabled straight to the KIM-1. A memory map shows what answers where,
 and the window warns about the placements the MOS and MTU manuals caution against.
 
-A strip under the board lists the installed cards and their addresses, in both the full and compact view. Click a
-card to open its settings (the K-1008 opens its display). **View › Show installed cards** hides the strip.
+A strip under the board lists the installed cards and their addresses, in both the full and compact view (the
+screenshots at the top show both). Click a card to open its settings; the K-1008 opens its display instead. A
+misconfigured card adds a ⚠ entry that explains the problem. **View › Show installed cards** hides the strip.
+
+<p align="center"><img src="docs/screenshots/card-strip.png" alt="The installed-cards strip: KIM-4, KIM-3 at $2000, K-1008 at $A000 and KIM-5 at $E000" width="700"></p>
 
 To try the Resident Assembler/Editor:
 1. Install a KIM-4 with a KIM-3 at `$2000` and a KIM-5.
