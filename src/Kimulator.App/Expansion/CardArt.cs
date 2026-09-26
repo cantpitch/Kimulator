@@ -1,4 +1,5 @@
 using Avalonia;
+using Avalonia.Media;
 using Avalonia.Media.Imaging;
 using Avalonia.Platform;
 using Kimulator.Kim1.Cards;
@@ -17,8 +18,13 @@ public sealed record DipBank(string Label, Rect Bounds, bool Vertical, bool Firs
 public sealed record CardArt(string Asset, int SourceWidth, int SourceHeight, IReadOnlyList<DipBank> Banks)
 {
     private Bitmap? _bitmap;
+    private Bitmap? _thumbnail;
 
     public Bitmap Bitmap => _bitmap ??= new Bitmap(AssetLoader.Open(new Uri($"avares://Kimulator/Assets/cards/{Asset}")));
+
+    /// <summary>A small copy (48 pixels high) for the card indicator on the main window.</summary>
+    public Bitmap Thumbnail => _thumbnail ??= Bitmap.CreateScaledBitmap(
+        new PixelSize((int)Math.Round(48.0 * SourceWidth / SourceHeight), 48), BitmapInterpolationMode.HighQuality);
 
     // Measured from the photos in images/. Orientation of the switches follows the MOS manual's figure
     // (KIM-2/3) and the "OPEN" legend printed on the KIM-5's switches.
@@ -34,6 +40,10 @@ public sealed record CardArt(string Asset, int SourceWidth, int SourceHeight, IR
         new DipBank("S2", new Rect(2130, 1317, 110, 120), Vertical: true, FirstAtStart: true, OnAtStart: false, Color: 0xFFC0392B),
     ]);
 
+    // MTU's photo; the switch in socket S1 has six positions (the address pairs), "ON" to the right.
+    public static CardArt K1008 { get; } = new("k1008.jpg", 2193, 1072,
+        [new DipBank("S1", new Rect(412, 690, 73, 125), Vertical: true, FirstAtStart: true, OnAtStart: false, Switches: 6, Color: 0xFF2A2A2A)]);
+
     public static CardArt Kim4 { get; } = new("kim4.jpg", 1024, 858, []);
 
     public static CardArt Kim4WithKim1 { get; } = new("kim4-kim1.jpg", 1024, 652, []);
@@ -42,6 +52,7 @@ public sealed record CardArt(string Asset, int SourceWidth, int SourceHeight, IR
     {
         CardType.Kim2 => Kim2,
         CardType.Kim3 => Kim3,
+        CardType.K1008 => K1008,
         _ => Kim5,
     };
 }

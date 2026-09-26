@@ -40,6 +40,48 @@ public class ExpansionTests
     public void Kim3SwitchesMatchManualTable5(string switches, int address) =>
         Assert.Equal(address, RamCard.Kim3Address(Parse(switches)));
 
+    // The jumper table in the K-1008 manual ("Unpacking and installation"), switch 1..6, X = on.
+    [Theory]
+    [InlineData("X0X00X", 0x2000)]
+    [InlineData("X00XX0", 0x4000)]
+    [InlineData("X00X0X", 0x6000)]
+    [InlineData("0XX0X0", 0x8000)]
+    [InlineData("0XX00X", 0xA000)]
+    [InlineData("0X0XX0", 0xC000)]
+    public void K1008SwitchesMatchManualTable(string switches, int address)
+    {
+        Assert.Equal((ushort)address, VisibleMemoryCard.Address(Parse(switches)));
+        Assert.Equal(Parse(switches), VisibleMemoryCard.SwitchesFor((ushort)address));
+    }
+
+    [Theory]
+    [InlineData("XXX00X")] // both switches of the A15 pair
+    [InlineData("X0000X")] // neither switch of the A14 pair
+    public void K1008WithABadSwitchPairHasNoAddress(string switches)
+    {
+        var card = CardConfig.Default(CardType.K1008);
+        card.Switches = Parse(switches);
+        Assert.Null(VisibleMemoryCard.Address(card.Switches));
+        Assert.Empty(ExpansionConfig.RangesOf(card));
+        Assert.Contains(Config(false, card).Problems(), p => p.Contains("K-1008"));
+    }
+
+    [Fact]
+    public void K1008ShowsWhatTheCpuStores()
+    {
+        var board = Board(Config(false, CardConfig.Default(CardType.K1008)));
+        var vm = Assert.IsType<VisibleMemoryCard>(Assert.Single(board.Cards));
+        // LDA #$80 / STA $2000 / LDA #$01 / STA $3F3F / JMP *: top-left and bottom-right dots.
+        board.LoadMemory(0x0200, [0xA9, 0x80, 0x8D, 0x00, 0x20, 0xA9, 0x01, 0x8D, 0x3F, 0x3F, 0x4C, 0x0A, 0x02]);
+        board.Cpu.PC = 0x0200;
+        board.RunUntil(board.Cycles + 100);
+
+        Assert.True(vm.Dot(0, 0));
+        Assert.False(vm.Dot(1, 0));
+        Assert.True(vm.Dot(VisibleMemoryCard.Width - 1, VisibleMemoryCard.Height - 1));
+        Assert.Equal(0x80, board.Peek(0x2000));
+    }
+
     [Fact]
     public void BareKim1MirrorsItsMemoryEvery8K()
     {

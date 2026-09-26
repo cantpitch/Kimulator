@@ -163,6 +163,92 @@ public sealed class RomCard : KimCard
 }
 
 /// <summary>
+/// MTU K-1008 Visible Memory: 8K of RAM that is also a 320 × 200 dot display. Each line is 40 bytes,
+/// the first byte is the top left, the most significant bit is the leftmost dot and a 1 is a white dot
+/// (K-1008 manual, "Programming"). The video circuit reads the RAM in the half cycle the 6502 leaves
+/// the bus alone, so the display never slows the processor. The last 192 bytes aren't shown.
+/// The 8K block is chosen with jumper pairs in socket S1 (manual, "Unpacking and installation"):
+/// switch 1 or 2 selects A15 = 0 or 1, switch 3 or 4 A14, switch 5 or 6 A13 — exactly one of each pair on.
+/// </summary>
+public sealed class VisibleMemoryCard : KimCard
+{
+    public const int Width = 320;
+    public const int Height = 200;
+    public const int BytesPerLine = Width / 8;
+    public const int DisplayBytes = BytesPerLine * Height;
+    public const int Size = 0x2000;
+
+    private readonly byte[] _ram = new byte[Size];
+
+    public VisibleMemoryCard(int switches) => BaseAddress = Address(switches);
+
+    public override string Name => "K-1008 Visible Memory";
+
+    /// <summary>First address, or null when a switch pair has both or neither switch on.</summary>
+    public ushort? BaseAddress { get; }
+
+    /// <summary>The RAM, which is also the picture. The display reads it from the UI thread (tearing is harmless).</summary>
+    public byte[] Memory => _ram;
+
+    /// <summary>Base address for switch settings (bit 0 = switch 1, set = on), or null if a pair is set wrongly.</summary>
+    public static ushort? Address(int switches)
+    {
+        int address = 0;
+        for (int pair = 0; pair < 3; pair++)
+        {
+            switch ((switches >> (2 * pair)) & 3)
+            {
+                case 0b01: break;                               // odd switch on: address bit = 0
+                case 0b10: address |= 0x8000 >> pair; break;    // even switch on: address bit = 1
+                default: return null;
+            }
+        }
+
+        return (ushort)address;
+    }
+
+    /// <summary>Switch settings for a base address on an 8K boundary.</summary>
+    public static int SwitchesFor(ushort address)
+    {
+        int switches = 0;
+        for (int pair = 0; pair < 3; pair++)
+            switches |= ((address & (0x8000 >> pair)) != 0 ? 0b10 : 0b01) << (2 * pair);
+        return switches;
+    }
+
+    public override IEnumerable<AddressRange> Ranges =>
+        BaseAddress is { } start ? [new(start, (ushort)(start + Size - 1))] : [];
+
+    public override bool TryRead(ushort address, out byte value)
+    {
+        int offset = address - (BaseAddress ?? -Size);
+        if ((uint)offset < Size)
+        {
+            value = _ram[offset];
+            return true;
+        }
+
+        value = 0;
+        return false;
+    }
+
+    public override bool TryWrite(ushort address, byte value)
+    {
+        int offset = address - (BaseAddress ?? -Size);
+        if ((uint)offset >= Size) return false;
+        _ram[offset] = value;
+        return true;
+    }
+
+    /// <summary>Whether the dot at (<paramref name="x"/>, <paramref name="y"/>) is lit; y = 0 is the top line.</summary>
+    public bool Dot(int x, int y) => (_ram[y * BytesPerLine + x / 8] & (0x80 >> (x % 8))) != 0;
+
+    public override void SaveState(BinaryWriter writer) => writer.Write(_ram);
+
+    public override void LoadState(BinaryReader reader) => reader.ReadExactly(_ram);
+}
+
+/// <summary>
 /// KIM-4 motherboard: six card slots, and the decode logic from the KIM-4 manual (section 3.3):
 /// addresses $0400–$13FF and $2000–$FFF7 go to the motherboard and DECODE ENABLE switches the KIM-1
 /// off, so the KIM-1's 8K image no longer repeats through memory, while $FFF8–$FFFF still reach the

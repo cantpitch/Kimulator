@@ -13,7 +13,11 @@ using Kimulator.App.Dialogs;
 using Kimulator.App.Editor;
 using Kimulator.App.Expansion;
 using Kimulator.App.Terminal;
+using Kimulator.App.Video;
 using Kimulator.Kim1;
+using CardConfig = Kimulator.Kim1.Cards.CardConfig;
+using CardType = Kimulator.Kim1.Cards.CardType;
+using ExpansionConfig = Kimulator.Kim1.Cards.ExpansionConfig;
 
 namespace Kimulator.App;
 
@@ -32,6 +36,7 @@ public partial class MainWindow : Window
     private AssemblerWindow? _assembler;
     private CassetteWindow? _cassette;
     private ExpansionWindow? _expansion;
+    private VisibleMemoryWindow? _visibleMemory;
     private long _lastStatusCycles;
     private DateTime _lastStatusTime = DateTime.UtcNow;
     private ushort _lastSaveStart = 0x0200, _lastSaveEnd = 0x03FF, _lastBinaryAddress = 0x0200;
@@ -55,6 +60,15 @@ public partial class MainWindow : Window
 
         ApplySettingsToMenus();
         RestoreWindowPlacement();
+        RefreshCardBar();
+        int visibleMemories = _session.VisibleMemories.Count;
+        _session.ExpansionChanged += () =>
+        {
+            RefreshCardBar();
+            // A K-1008 was just installed: switch its monitor on.
+            if (visibleMemories == 0 && _session.VisibleMemories.Count > 0) ShowVisibleMemory();
+            visibleMemories = _session.VisibleMemories.Count;
+        };
 
         AddHandler(KeyDownEvent, OnPreviewKeyDown, RoutingStrategies.Tunnel);
         AddHandler(KeyUpEvent, OnPreviewKeyUp, RoutingStrategies.Tunnel);
@@ -83,6 +97,8 @@ public partial class MainWindow : Window
             Opened += (_, _) => ShowCassette();
         if (Environment.GetCommandLineArgs().Contains("--expansion"))
             Opened += (_, _) => ShowExpansion();
+        if ((_settings.VisibleMemoryOpen && _session.VisibleMemories.Count > 0) || Environment.GetCommandLineArgs().Contains("--visible-memory"))
+            Opened += (_, _) => ShowVisibleMemory();
         Opened += (_, _) => DispatcherTimer.RunOnce(() =>
         {
             if (_session.ExpansionError is { } cardError) ShowStatus(cardError);
@@ -95,6 +111,8 @@ public partial class MainWindow : Window
         _settings.TerminalOpen = _terminal is not null;
         _settings.AssemblerOpen = _assembler is not null;
         _settings.CassetteOpen = _cassette is not null;
+        _settings.VisibleMemoryOpen = _visibleMemory is not null;
+        _visibleMemory?.Close();
         _cassette?.Close();
         _expansion?.Close();
         // Close child windows first: the assembler stores unsaved text in the settings as it closes.
@@ -157,6 +175,7 @@ public partial class MainWindow : Window
         ApplySpeed(_settings.Speed);
 
         KeyClickMenu.IsChecked = _settings.KeyClick;
+        CardBarMenu.IsChecked = _settings.ShowCardBar;
         foreach (var item in SoundMenu.Items.OfType<MenuItem>())
         {
             if (item.Tag is not string tag) continue;
@@ -217,6 +236,7 @@ public partial class MainWindow : Window
                 case Key.D: ShowDebugger(); break;
                 case Key.E: ShowAssembler(); break;
                 case Key.K: ShowCassette(); break;
+                case Key.G: ShowVisibleMemory(); break;
                 default: e.Handled = false; break;
             }
 
@@ -479,17 +499,110 @@ public partial class MainWindow : Window
 
     private void OnShowExpansion(object? sender, RoutedEventArgs e) => ShowExpansion();
 
-    private void ShowExpansion()
+    private void ShowExpansion(int? slot = null)
     {
-        if (_expansion is not null)
+        if (_expansion is null)
+        {
+            _expansion = new ExpansionWindow(_session, _settings, ShowVisibleMemory);
+            _expansion.Closed += (_, _) => _expansion = null;
+            _expansion.Show(this);
+        }
+        else
         {
             _expansion.Activate();
+        }
+
+        if (slot is { } s) _expansion.SelectSlot(s);
+    }
+
+    private void OnShowVisibleMemory(object? sender, RoutedEventArgs e) => ShowVisibleMemory();
+
+    private void ShowVisibleMemory()
+    {
+        if (_visibleMemory is not null)
+        {
+            _visibleMemory.Activate();
             return;
         }
 
-        _expansion = new ExpansionWindow(_session, _settings);
-        _expansion.Closed += (_, _) => _expansion = null;
-        _expansion.Show(this);
+        _visibleMemory = new VisibleMemoryWindow(_session, _settings);
+        _visibleMemory.Closed += (_, _) => _visibleMemory = null;
+        _visibleMemory.Show(this);
+    }
+
+    // ---------------------------------------------------------------- installed cards
+
+    private void OnToggleCardBar(object? sender, RoutedEventArgs e)
+    {
+        _settings.ShowCardBar = CardBarMenu.IsChecked;
+        RefreshCardBar();
+    }
+
+    /// <summary>Rebuilds the strip under the board that shows which cards are installed; each opens its settings.</summary>
+    private void RefreshCardBar()
+    {
+        CardBar.IsVisible = _settings.ShowCardBar;
+        CardChips.Children.Clear();
+        var config = _session.Expansion;
+
+        if (config.Kim4)
+            CardChips.Children.Add(CardChip(CardArt.Kim4, "KIM-4", "KIM-4 motherboard: six card slots and full address decoding.", () => ShowExpansion()));
+
+        foreach (var (slot, card) in config.InstalledCards)
+        {
+            string name = CardConfig.DisplayName(card.Type).Split("  ")[0];
+            string where = config.Kim4 ? $"KIM-4 slot {slot + 1}" : "KIM-1 expansion connector";
+            string address = DescribeRanges(ExpansionConfig.RangesOf(card).ToList());
+            string tip = $"{CardConfig.DisplayName(card.Type).Replace("  ", " ")}\n{where}\nAnswers at {address}";
+            Action open = card.Type == CardType.K1008 ? ShowVisibleMemory : () => ShowExpansion(slot);
+            if (card.Type == CardType.K1008) tip += "\nClick to show its display.";
+            CardChips.Children.Add(CardChip(CardArt.For(card.Type), $"{name}  {address}", tip, open));
+        }
+
+        if (config.Problems() is { Count: > 0 } problems)
+        {
+            var chip = CardChip(null, problems.Count == 1 ? "⚠ 1 card problem" : $"⚠ {problems.Count} card problems",
+                string.Join("\n\n", problems), () => ShowExpansion());
+            chip.Foreground = new Avalonia.Media.SolidColorBrush(Avalonia.Media.Color.FromRgb(0xF0, 0x8A, 0x5D));
+            CardChips.Children.Add(chip);
+        }
+
+        if (CardChips.Children.Count == 0)
+            CardChips.Children.Add(CardChip(null, "No expansion cards", "A bare KIM-1. Click to add KIM-2/3/4/5 or K-1008 cards.", () => ShowExpansion()));
+    }
+
+    private static string DescribeRanges(IReadOnlyList<Kimulator.Kim1.Cards.AddressRange> ranges)
+    {
+        if (ranges.Count == 0) return "no address";
+        var merged = new List<Kimulator.Kim1.Cards.AddressRange>();
+        foreach (var r in ranges.OrderBy(r => r.Start))
+        {
+            if (merged.Count > 0 && merged[^1].End + 1 == r.Start) merged[^1] = new(merged[^1].Start, r.End);
+            else merged.Add(r);
+        }
+
+        return string.Join(", ", merged);
+    }
+
+    private static Button CardChip(CardArt? art, string text, string tip, Action click)
+    {
+        var content = new StackPanel { Orientation = Avalonia.Layout.Orientation.Horizontal, Spacing = 6 };
+        if (art is not null)
+            content.Children.Add(new Image { Source = art.Thumbnail, Height = 22, Stretch = Avalonia.Media.Stretch.Uniform });
+        content.Children.Add(new TextBlock { Text = text, FontSize = 12, VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center });
+
+        var chip = new Button
+        {
+            Content = content,
+            Padding = new Thickness(4, 2, 8, 2),
+            Background = new Avalonia.Media.SolidColorBrush(Avalonia.Media.Color.FromRgb(0x20, 0x20, 0x20)),
+            Foreground = new Avalonia.Media.SolidColorBrush(Avalonia.Media.Color.FromRgb(0xC8, 0xC8, 0xC8)),
+            CornerRadius = new CornerRadius(4),
+            Focusable = false, // keep keyboard focus on the board: the PC keys are the KIM keypad
+        };
+        ToolTip.SetTip(chip, tip);
+        chip.Click += (_, _) => click();
+        return chip;
     }
 
     private void ShowCassette()

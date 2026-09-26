@@ -14,8 +14,8 @@ of a real KIM-1, and the keys, the SST switch and the LED display on the photo a
 - **Hardware-level KIM-1**: the original 6530-002 and 6530-003 ROMs run unmodified, with no patched monitor
   routines. The model covers the 74145 digit/row decoder, the keypad matrix, the multiplexed LEDs (brightness
   comes from each segment's duty cycle), RS/ST/SST, and the 8 KB address mirroring.
-- **Beyond the board**: a teletype terminal, a debugger, an assembler/editor, a cassette deck with sound, and the
-  KIM-2/3/4/5 expansion cards.
+- **Beyond the board**: a teletype terminal, a debugger, an assembler/editor, a cassette deck with sound, the
+  KIM-2/3/4/5 expansion cards and MTU's K-1008 Visible Memory graphics card.
 
 ## Download
 
@@ -53,6 +53,7 @@ Add `-- --compact` to start with only the display and keypad.
 | Ctrl+D | debugger |
 | Ctrl+E | assembler / editor |
 | Ctrl+K | cassette deck |
+| Ctrl+G | K-1008 Visible Memory display |
 | Ctrl+1 / Ctrl+2 | full board / compact view |
 
 By default, power-on points the NMI and IRQ vectors (`$17FA`, `$17FE`) at the monitor (`$1C00`) so ST, SST
@@ -159,14 +160,38 @@ address the way you would on the real card: click its DIP switches.
 | KIM-2 | 4K RAM. Switches 1–4 = A15–A12 (MOS KIM-2/3 manual, Table 4). |
 | KIM-3 | 8K RAM. Switches 1–3 = A15–A13 (Table 5). |
 | KIM-5 | 8 sockets for 6540 2K ROMs in two banks (S1: U1–U4, S2: U5–U8). Ships with the Resident Assembler/Editor ROMs (6540-007/-008/-009) at `$E000`–`$F7FF`. |
+| MTU K-1008 Visible Memory | 8K RAM that is also a 320 × 200 dot display. Switch pairs 1/2, 3/4 and 5/6 set A15, A14 and A13 to 0 or 1 (K-1008 manual). Ships at `$2000`. |
 
-Without a KIM-4, one KIM-2 or KIM-3 can be cabled straight to the KIM-1. A memory map shows what answers where,
-and the window warns about the placements the MOS manuals caution against.
+Without a KIM-4, one card can be cabled straight to the KIM-1. A memory map shows what answers where,
+and the window warns about the placements the MOS and MTU manuals caution against.
+
+A strip under the board lists the installed cards and their addresses, in both the full and compact view. Click a
+card to open its settings (the K-1008 opens its display). **View › Show installed cards** hides the strip.
 
 To try the Resident Assembler/Editor:
 1. Install a KIM-4 with a KIM-3 at `$2000` and a KIM-5.
 2. Switch to TTY mode.
 3. Start `$F100`. It sets its I/O vectors to the monitor's TTY routines and asks `BASE=`.
+
+### K-1008 Visible Memory
+
+<p align="center"><img src="docs/screenshots/visible-memory.png" alt="The K-1008 display showing MTU's SWIRL demo" width="700"></p>
+
+**View › Visible Memory display** (Ctrl+G) is the monitor on the card's video output. It shows the card's RAM:
+- 40 bytes per line, starting at the top.
+- The leftmost dot is bit 7, and a 1 lights it.
+
+The screen refreshes 60 times a second, like the card's own scan, and it never slows the processor, just as on the
+real card. You can pick a white, green or amber phosphor, show the picture with square dots or stretched to a 4:3 monitor,
+and save it as a PNG.
+
+MTU's Graphics Software Package (SWIRL, LIFE, the text and graphics routines) is copyrighted by MTU, so it isn't
+included. Eduardo Casino and Hans Otten have preserved it, with paper tapes, on
+[Hans Otten's K-1008 pages](http://retro.hansotten.nl/6502-sbc/mtu/mtu-k-1008-visable/graphics-software-package-k-1008/).
+To run SWIRL:
+1. Load `swirl.pap` with a K-1008 at `$2000`.
+2. Start at `$002F`.
+3. Or start at `$0045` for random patterns.
 
 The KIM-5's bank/switch mapping is inferred from the board and the ROM addresses, because the KIM-5 manual
 isn't available.
@@ -201,8 +226,8 @@ operating systems and attaches them to a GitHub release.
 | Project | Contents |
 |---|---|
 | `src/Kimulator.Core` | 6502 core, opcode table, `MachineRunner` (real-time emulation thread), assembler, debugger/disassembler/symbols, expansion-card contract, paper tape / Intel HEX / WAV formats, audio sampling, teletype text buffer |
-| `src/Kimulator.Kim1` | 6530 RRIOT, KIM-1 board, KIM-2/3/4/5 cards, LED display model, bit-level TTY interface, cassette with PLL model, save states, embedded ROMs and monitor symbols |
-| `src/Kimulator.App` | Avalonia UI: board photo view, hotspot layout (`Assets/kim1-layout.json`), terminal, debugger, assembler, cassette and expansion windows, OpenAL audio, key clicks, settings |
+| `src/Kimulator.Kim1` | 6530 RRIOT, KIM-1 board, KIM-2/3/4/5 and K-1008 cards, LED display model, bit-level TTY interface, cassette with PLL model, save states, embedded ROMs and monitor symbols |
+| `src/Kimulator.App` | Avalonia UI: board photo view, hotspot layout (`Assets/kim1-layout.json`), terminal, debugger, assembler, cassette, expansion and Visible Memory windows, installed-card strip, OpenAL audio, key clicks, settings |
 | `tests/Kimulator.Tests` | CPU suites, interrupt timing, headless KIM-1 keypad and TTY monitor tests, file formats, save states, cassette round trips, debugger, disassembler and assembler |
 | `packaging/`, `scripts/` | macOS `Info.plist` and icon, Linux desktop entry and installer, packaging and test-data scripts |
 
@@ -213,6 +238,7 @@ See [docs/PLAN.md](docs/PLAN.md) for the roadmap.
 - KIM-1 ROM images: the public 6530-002/-003 dumps from [Hans Otten's KIM-1 pages](http://retro.hansotten.nl/6502-sbc/kim-1-manuals-and-software/kim_1-roms/).
 - KIM-5 Resident Assembler/Editor ROM dumps (6540-007/-008/-009) and the KIM-2/3/4 manuals, also from
   [Hans Otten's KIM system products pages](http://retro.hansotten.nl/6502-sbc/kim-1-manuals-and-software/kim-system-products/).
+- The MTU K-1008 photo and manuals, from [Hans Otten's MTU K-1008 pages](http://retro.hansotten.nl/6502-sbc/mtu/mtu-k-1008-visable/).
 - [SingleStepTests/65x02](https://github.com/SingleStepTests/65x02) (MIT) and
   [Klaus Dormann's 6502 functional tests](https://github.com/Klaus2m5/6502_65C02_functional_tests) (GPL-3.0, the test binary only).
 - MP3 decoding by [NLayer](https://github.com/naudio/NLayer) (MIT); audio output by [Silk.NET](https://github.com/dotnet/Silk.NET) and OpenAL Soft (LGPL); the editor is [AvaloniaEdit](https://github.com/AvaloniaUI/AvaloniaEdit) (MIT).

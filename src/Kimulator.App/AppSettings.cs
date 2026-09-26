@@ -58,6 +58,17 @@ public sealed class AppSettings
 
     public bool CassetteOpen { get; set; }
 
+    public bool VisibleMemoryOpen { get; set; }
+
+    /// <summary>Show the strip of installed expansion cards under the board.</summary>
+    public bool ShowCardBar { get; set; } = true;
+
+    /// <summary>Dot colour of the K-1008 monitor: White, Green or Amber.</summary>
+    public string VisibleMemoryPhosphor { get; set; } = "White";
+
+    /// <summary>Show the K-1008 picture stretched to a 4:3 monitor (otherwise square dots).</summary>
+    public bool VisibleMemoryMonitorShape { get; set; } = true;
+
     /// <summary>Installed KIM system cards.</summary>
     public ExpansionConfig Expansion { get; set; } = new();
 

@@ -23,6 +23,7 @@ public static class KeyboardMap
         Ctrl+D           debugger
         Ctrl+E           assembler / editor
         Ctrl+K           cassette deck
+        Ctrl+G           K-1008 Visible Memory display
         Ctrl+O           load program (.ptp, .hex, .bin)
         Ctrl+M           save memory range
         Ctrl+S / Ctrl+L  save / load state

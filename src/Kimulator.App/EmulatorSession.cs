@@ -53,8 +53,10 @@ public sealed class EmulatorSession : IDisposable
         }
         try
         {
-            Board.SetCards(settings.Expansion.Build(File.ReadAllBytes));
+            var cards = settings.Expansion.Build(File.ReadAllBytes);
+            Board.SetCards(cards);
             Expansion = settings.Expansion.Clone();
+            VisibleMemories = FindVisibleMemories(cards);
         }
         catch (Exception ex) when (ex is IOException or ArgumentException or UnauthorizedAccessException)
         {
@@ -106,6 +108,12 @@ public sealed class EmulatorSession : IDisposable
     /// <summary>The installed cards (UI-side copy of what the board runs with).</summary>
     public ExpansionConfig Expansion { get; private set; } = new();
 
+    /// <summary>The installed K-1008 cards, in slot order. Their RAM is read by the display window.</summary>
+    public IReadOnlyList<VisibleMemoryCard> VisibleMemories { get; private set; } = [];
+
+    /// <summary>Raised on the UI thread after <see cref="ApplyExpansionAsync"/> installed new cards.</summary>
+    public event Action? ExpansionChanged;
+
     /// <summary>Set when the saved card configuration could not be installed at startup.</summary>
     public string? ExpansionError { get; }
 
@@ -119,7 +127,12 @@ public sealed class EmulatorSession : IDisposable
             return true;
         });
         Expansion = config.Clone();
+        VisibleMemories = FindVisibleMemories(cards);
+        ExpansionChanged?.Invoke();
     }
+
+    private static List<VisibleMemoryCard> FindVisibleMemories(IEnumerable<KimCard> cards) =>
+        [.. cards.SelectMany(c => c is Kim4Motherboard kim4 ? kim4.Slots.OfType<KimCard>() : [c]).OfType<VisibleMemoryCard>()];
 
     /// <summary>Raised on the UI thread after <see cref="PumpTerminal"/> added text to <see cref="Transcript"/>.</summary>
     public event Action? TranscriptChanged;

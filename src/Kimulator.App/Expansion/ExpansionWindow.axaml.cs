@@ -17,10 +17,12 @@ public partial class ExpansionWindow : Window
         (CardType.Kim2, CardConfig.DisplayName(CardType.Kim2)),
         (CardType.Kim3, CardConfig.DisplayName(CardType.Kim3)),
         (CardType.Kim5, CardConfig.DisplayName(CardType.Kim5)),
+        (CardType.K1008, CardConfig.DisplayName(CardType.K1008)),
     ];
 
     private readonly EmulatorSession _session;
     private readonly AppSettings _settings;
+    private readonly Action? _showVisibleMemory;
     private ExpansionConfig _config;
     private int _slot;
     private bool _updating;
@@ -28,11 +30,12 @@ public partial class ExpansionWindow : Window
 
     public ExpansionWindow() : this(null!, new AppSettings()) { } // designer
 
-    public ExpansionWindow(EmulatorSession session, AppSettings settings)
+    public ExpansionWindow(EmulatorSession session, AppSettings settings, Action? showVisibleMemory = null)
     {
         InitializeComponent();
         _session = session;
         _settings = settings;
+        _showVisibleMemory = showVisibleMemory;
         _config = (session?.Expansion ?? new ExpansionConfig()).Clone();
         CardTypeBox.ItemsSource = CardChoices.Select(c => c.Label).ToList();
         Card.SwitchToggled += OnSwitchToggled;
@@ -49,7 +52,7 @@ public partial class ExpansionWindow : Window
         Kim4Picture.IsVisible = _config.Kim4;
         SystemHint.Text = _config.Kim4
             ? "The KIM-4 buffers the bus to six slots and takes over address decoding: cards answer at $0400–$13FF and $2000–$FFF7, and the KIM-1's memory no longer repeats every 8K. $FFF8–$FFFF stay on the KIM-1 so reset/NMI/IRQ still reach the monitor."
-            : "Without a motherboard, one KIM-2 or KIM-3 can be cabled straight to the KIM-1's expansion connector. The KIM-1 only decodes 13 address lines, so its 8K appears again throughout memory wherever no card answers.";
+            : "Without a motherboard, one card (a KIM-2, KIM-3 or K-1008) can be cabled straight to the KIM-1's expansion connector. The KIM-1 only decodes 13 address lines, so its 8K appears again throughout memory wherever no card answers.";
 
         _slot = Math.Min(_slot, _config.SlotCount - 1);
         SlotList.ItemsSource = Enumerable.Range(0, _config.SlotCount).Select(SlotSummary).ToList();
@@ -64,6 +67,14 @@ public partial class ExpansionWindow : Window
         ShowSlot();
         UpdateStatus();
         _updating = false;
+    }
+
+    /// <summary>Shows a slot's card (used by the card indicator on the main window).</summary>
+    public void SelectSlot(int slot)
+    {
+        if (slot < 0 || slot >= _config.SlotCount) return;
+        _slot = slot;
+        Refresh();
     }
 
     private string SlotSummary(int slot)
@@ -100,10 +111,17 @@ public partial class ExpansionWindow : Window
         {
             CardType.Kim2 => "Click the address switch to set the 4K block: switch 1 = A15, 2 = A14, 3 = A13, 4 = A12, on = 1 (MOS KIM-2/3 manual, Table 4).",
             CardType.Kim3 => "Click the address switch to set the 8K block: switch 1 = A15, 2 = A14, 3 = A13, on = 1; switch 4 isn't connected (MOS KIM-2/3 manual, Table 5).",
+            CardType.K1008 => "Socket S1 holds three pairs of switches: 1 or 2 sets A15 to 0 or 1, 3 or 4 sets A14, 5 or 6 sets A13 — exactly one of each pair on (K-1008 manual). MTU shipped it at $2000, where its demo programs expect it. The 320×200 picture is in View › Visible Memory display.",
             _ => "Switch banks S1 and S2 set the 8K block for sockets U1–U4 and U5–U8 (switches 1–3 = A15–A13, on = 1). The Resident Assembler/Editor needs S1 at $E000 and RAM for its text (e.g. a KIM-3 at $2000). In TTY mode, start the editor at $F100 (it sets up its I/O vectors and asks BASE=) or the assembler at $E000.",
         };
 
         if (card.Type == CardType.Kim5) BuildSockets(card);
+        if (card.Type == CardType.K1008 && _showVisibleMemory is not null)
+        {
+            var show = new Button { Content = "Show the display", HorizontalAlignment = HorizontalAlignment.Left };
+            show.Click += (_, _) => _showVisibleMemory();
+            SocketPanel.Children.Add(show);
+        }
     }
 
     private void BuildSockets(CardConfig card)

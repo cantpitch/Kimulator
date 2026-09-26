@@ -1,0 +1,21 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:v="using:Kimulator.App.Video"
+        x:Class="Kimulator.App.Video.VisibleMemoryWindow"
+        Title="K-1008 Visible Memory"
+        Width="720" Height="620"
+        Background="#161616">
+    <DockPanel>
+        <Border DockPanel.Dock="Top" Background="#101010" Padding="10,6">
+            <WrapPanel ItemSpacing="10" LineSpacing="6">
+                <ComboBox x:Name="CardBox" MinWidth="200" SelectionChanged="OnCardChanged" VerticalAlignment="Center" />
+                <ComboBox x:Name="PhosphorBox" SelectionChanged="OnPhosphorChanged" VerticalAlignment="Center" />
+                <CheckBox x:Name="ShapeBox" Content="4:3 monitor" IsCheckedChanged="OnShapeChanged" VerticalAlignment="Center"
+                          ToolTip.Tip="Stretch the 320×200 picture to a 4:3 monitor, as it looked on a real one. Off: square dots." />
+                <Button Content="Save picture…" Click="OnSavePicture" VerticalAlignment="Center" />
+            </WrapPanel>
+        </Border>
+        <TextBlock x:Name="InfoText" DockPanel.Dock="Bottom" Margin="10,6" Foreground="#9A9A9A" FontSize="12" TextWrapping="Wrap" />
+        <v:VisibleMemoryView x:Name="Screen" />
+    </DockPanel>
+</Window>

@@ -59,6 +59,9 @@
                 <MenuItem Header="_Debugger" InputGesture="Ctrl+D" Click="OnShowDebugger" />
                 <MenuItem Header="_Assembler" InputGesture="Ctrl+E" Click="OnShowAssembler" />
                 <MenuItem Header="Cassette _deck" InputGesture="Ctrl+K" Click="OnShowCassette" />
+                <MenuItem Header="_Visible Memory display (K-1008)" InputGesture="Ctrl+G" Click="OnShowVisibleMemory" />
+                <Separator />
+                <MenuItem x:Name="CardBarMenu" Header="Show installed _cards" ToggleType="CheckBox" Click="OnToggleCardBar" />
             </MenuItem>
             <MenuItem Header="_Help">
                 <MenuItem Header="_Keyboard shortcuts" Click="OnShowKeys" />
@@ -69,6 +72,10 @@
                 <TextBlock x:Name="SpeedText" DockPanel.Dock="Right" Foreground="#A0A0A0" FontSize="12" />
                 <TextBlock x:Name="StatusText" Foreground="#A0A0A0" FontSize="12" TextTrimming="CharacterEllipsis" />
             </DockPanel>
+        </Border>
+        <!-- Installed expansion cards; below the board so it shows in both the full and compact view. -->
+        <Border x:Name="CardBar" DockPanel.Dock="Bottom" Background="#141414" BorderBrush="#2A2A2A" BorderThickness="0,1,0,0" Padding="6,4">
+            <WrapPanel x:Name="CardChips" ItemSpacing="6" LineSpacing="4" />
         </Border>
         <ContentControl x:Name="BoardHost" />
     </DockPanel>

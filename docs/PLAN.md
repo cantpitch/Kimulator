@@ -37,6 +37,7 @@
 | 6 | Text editor (AvaloniaEdit) + built-in ca65/64tass-style assembler that assembles straight into memory; source-level breakpoints and PC highlighting | ✅ |
 | 7 | Cassette: WAV record/playback through PB7 with an LM565 PLL model; speaker audio (OpenAL Soft) from tape out or application port | ✅ |
 | 8 | Expansion cards with their own photos and clickable DIP switches: KIM-4 motherboard (manual decoding), KIM-2/KIM-3 RAM (manual switch tables), KIM-5 ROM with the Resident Assembler/Editor; memory map and conflict checks; card RAM in save states | ✅ (KIM-6 prototyping card not done: no photo yet) |
+| 9 | MTU K-1008 Visible Memory: 8K RAM card with the manual's address jumper pairs, a 320×200 monitor window (phosphor colours, 4:3 or square dots, PNG export); a strip under the board showing the installed cards in both views | ✅ (the screen-half blanking jumpers S1-7/S1-8 aren't modelled: the card in the photo has a 6-way switch) |
 
 ## Remaining polish
 
