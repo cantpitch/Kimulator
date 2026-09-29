@@ -246,7 +246,8 @@ operating systems and attaches them to a GitHub release.
 | `docs/workbook` | The assembly language workbook: `workbook.html`, the answer programs and `build.py`, which prints the PDF |
 | `packaging/`, `scripts/` | macOS `Info.plist` and icon, Linux desktop entry and installer, packaging and test-data scripts |
 
-See [docs/PLAN.md](docs/PLAN.md) for the roadmap.
+See [docs/PLAN.md](docs/PLAN.md) for the roadmap. [docs/HARDWARE-NOTES.md](docs/HARDWARE-NOTES.md) lists emulated-hardware details that programs rely on,
+such as the timers' N + 1 counts and what the monitor's keypad routines expect.
 
 ## Credits
 
