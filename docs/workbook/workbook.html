@@ -1,0 +1,1147 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>KIM-1 Assembly Language Workbook</title>
+<!-- Source of kim1-workbook.pdf. build.py fills in the answer listings from answers/*.s and prints it. -->
+<style>
+  @page {
+    size: Letter;
+    margin: 0.75in 0.8in 0.8in 0.8in;
+    @bottom-center { content: counter(page); font: 9pt "Segoe UI", Helvetica, Arial, sans-serif; color: #666; }
+  }
+  @page :first { @bottom-center { content: none; } }
+
+  :root {
+    --ink: #1c1c1c;
+    --muted: #5a5a5a;
+    --rule: #cfcac0;
+    --accent: #9a3412;
+    --accent-soft: #fbeee6;
+    --code-bg: #f6f4ef;
+    --kw: #1d4ed8;
+    --dir: #7c3aed;
+    --cmt: #6b7280;
+    --lbl: #111;
+  }
+  html { font-size: 10.5pt; }
+  body { margin: 0; color: var(--ink); background: #fff;
+         font-family: Cambria, Georgia, "Times New Roman", serif; line-height: 1.42; }
+  h1, h2, h3, h4, .sans { font-family: "Segoe UI", Helvetica, Arial, sans-serif; }
+  h1 { font-size: 22pt; margin: 0 0 0.3em; letter-spacing: -0.01em; }
+  h2 { font-size: 16pt; margin: 0 0 0.6em; padding-bottom: 0.25em; border-bottom: 2px solid var(--accent); color: var(--accent);
+       break-before: page; }
+  h3 { font-size: 12pt; margin: 1.3em 0 0.4em; break-after: avoid; }
+  h4 { font-size: 10.5pt; margin: 1em 0 0.3em; break-after: avoid; }
+  p { margin: 0.45em 0; }
+  a { color: inherit; text-decoration: none; }
+  code, pre, .mono { font-family: Consolas, "Cascadia Mono", Menlo, "DejaVu Sans Mono", monospace; font-size: 0.92em; }
+  code { background: var(--code-bg); padding: 0 0.2em; border-radius: 2px; }
+  pre { background: var(--code-bg); border-left: 3px solid var(--rule); padding: 0.55em 0.8em; margin: 0.5em 0;
+        font-size: 8.6pt; line-height: 1.32; white-space: pre; overflow: hidden; }
+  pre code { background: none; padding: 0; font-size: inherit; }
+  ul, ol { margin: 0.4em 0; padding-left: 1.4em; }
+  li { margin: 0.15em 0; }
+  table { border-collapse: collapse; margin: 0.5em 0; font-size: 9.2pt; break-inside: avoid; }
+  th, td { border: 1px solid var(--rule); padding: 0.18em 0.5em; text-align: left; vertical-align: top; }
+  th { background: #efebe3; font-family: "Segoe UI", Helvetica, Arial, sans-serif; font-weight: 600; }
+  td code, th code { background: none; padding: 0; }
+  .note { background: var(--accent-soft); border-left: 3px solid var(--accent); padding: 0.4em 0.8em; margin: 0.7em 0; break-inside: avoid; }
+  .note p:first-child { margin-top: 0; } .note p:last-child { margin-bottom: 0; }
+  .two { columns: 2; column-gap: 1.6em; }
+  .two > * { break-inside: avoid; }
+
+  /* Title page */
+  .cover { height: 9.2in; display: flex; flex-direction: column; justify-content: center; }
+  .cover .kicker { font: 600 11pt "Segoe UI", Helvetica, Arial, sans-serif; color: var(--accent); letter-spacing: 0.08em; text-transform: uppercase; }
+  .cover h1 { font-size: 34pt; line-height: 1.1; margin: 0.3em 0 0.4em; }
+  .cover .sub { font-size: 13pt; color: var(--muted); max-width: 5.2in; }
+  .cover .led { margin: 1.2in 0 0; display: flex; gap: 10px; }
+  .cover .foot { margin-top: auto; font: 9.5pt "Segoe UI", Helvetica, Arial, sans-serif; color: var(--muted); }
+
+  /* Contents */
+  .toc { columns: 2; column-gap: 2em; font-size: 9.6pt; }
+  .toc h4 { margin: 0.2em 0 0.25em; color: var(--accent); break-after: avoid; }
+  .toc ol { list-style: none; padding: 0; margin: 0 0 0.8em; }
+  .toc li { margin: 0.08em 0; }
+  .toc .n { display: inline-block; width: 2em; color: var(--muted); font-family: "Segoe UI", Helvetica, Arial, sans-serif; }
+
+  /* Problems */
+  .problem { margin: 1.1em 0 0.9em; padding-top: 0.5em; border-top: 1px solid var(--rule); break-inside: avoid; }
+  .problem h3 { margin: 0 0 0.3em; display: flex; align-items: baseline; gap: 0.5em; }
+  .problem h3 .num { font-size: 10pt; color: #fff; background: var(--accent); border-radius: 3px; padding: 0.05em 0.45em; }
+  .problem .new { font-family: "Segoe UI", Helvetica, Arial, sans-serif; font-size: 8.8pt; color: var(--muted); margin: 0.2em 0 0.35em; }
+  .problem .new code { font-size: 8.4pt; color: var(--kw); background: #eef2ff; padding: 0.05em 0.3em; margin-right: 0.15em; }
+  .problem .try { font-size: 9.6pt; }
+  .problem .try::before { content: "Try it: "; font-family: "Segoe UI", Helvetica, Arial, sans-serif; font-weight: 600; color: var(--accent); }
+  .problem .hint { font-size: 9.6pt; color: var(--muted); }
+  .problem .hint::before { content: "Hint: "; font-family: "Segoe UI", Helvetica, Arial, sans-serif; font-weight: 600; }
+  .problem .setup { font-size: 9.6pt; }
+  .problem .setup::before { content: "Setup: "; font-family: "Segoe UI", Helvetica, Arial, sans-serif; font-weight: 600; color: #0f766e; }
+  .problem .challenge { font-size: 9.6pt; font-style: italic; }
+  .problem .challenge::before { content: "Going further: "; font-style: normal; font-family: "Segoe UI", Helvetica, Arial, sans-serif; font-weight: 600; }
+  .keep { break-inside: avoid; }
+
+  /* Answers */
+  .answer { margin: 1em 0 1.2em; }
+  .answer h3 { margin: 0 0 0.25em; font-size: 11pt; }
+  .answer h3 .num { color: var(--accent); margin-right: 0.3em; }
+  .answer h3, .answer > p { break-after: avoid; }
+  .answer pre { break-inside: auto; }
+
+  /* Listing colours (build.py) */
+  .c { color: var(--cmt); font-style: italic; }
+  .m { color: var(--kw); font-weight: 600; }
+  .d { color: var(--dir); }
+  .l { color: var(--lbl); font-weight: 700; }
+  .omit { color: var(--accent); font-style: italic; }
+
+  /* Figures */
+  figure { margin: 0.6em 0; break-inside: avoid; }
+  figcaption { font: 8.8pt "Segoe UI", Helvetica, Arial, sans-serif; color: var(--muted); margin-top: 0.2em; }
+  .keypad td { width: 2.4em; height: 1.7em; text-align: center; vertical-align: middle; font-family: "Segoe UI", Helvetica, Arial, sans-serif; font-weight: 600; }
+  .keypad td.fn { background: #efebe3; font-size: 8pt; }
+  .flex { display: flex; gap: 1.6em; align-items: flex-start; }
+</style>
+</head>
+<body>
+
+<!-- ======================================================================= Cover -->
+<section class="cover">
+  <div class="kicker">Kimulator workbook</div>
+  <h1>KIM-1 Assembly Language Workbook</h1>
+  <p class="sub">44 problems that start with a single <code>LDA</code> and end with interrupt-driven clocks,
+    music and graphics on the 6502, the 6530 RRIOTs and the MTU K-1008 Visible Memory.</p>
+  <div class="led" aria-hidden="true">
+    <!-- HELLO on seven-segment digits, as in problem 29 -->
+    <svg width="330" height="92" viewBox="0 0 330 92">
+      <rect width="330" height="92" rx="8" fill="#161010"/>
+      <g fill="#ff3b1f">
+        <!-- H -->
+        <g transform="translate(14,10)">
+          <polygon points="46,6 52,12 50,34 44,38 40,34 42,12"/><polygon points="44,42 50,46 48,68 42,74 38,70 40,46"/>
+          <polygon points="4,46 10,42 12,46 10,70 4,74 2,70"/><polygon points="6,12 12,6 16,12 14,34 10,38 4,34"/>
+          <polygon points="10,40 14,36 40,36 44,40 40,44 14,44"/>
+        </g>
+        <!-- E -->
+        <g transform="translate(76,10)">
+          <polygon points="10,4 46,4 40,10 16,10"/><polygon points="8,72 14,66 38,66 44,72"/>
+          <polygon points="4,46 10,42 12,46 10,70 4,74 2,70"/><polygon points="6,12 12,6 16,12 14,34 10,38 4,34"/>
+          <polygon points="10,40 14,36 40,36 44,40 40,44 14,44"/>
+        </g>
+        <!-- L -->
+        <g transform="translate(138,10)">
+          <polygon points="8,72 14,66 38,66 44,72"/>
+          <polygon points="4,46 10,42 12,46 10,70 4,74 2,70"/><polygon points="6,12 12,6 16,12 14,34 10,38 4,34"/>
+        </g>
+        <!-- L -->
+        <g transform="translate(200,10)">
+          <polygon points="8,72 14,66 38,66 44,72"/>
+          <polygon points="4,46 10,42 12,46 10,70 4,74 2,70"/><polygon points="6,12 12,6 16,12 14,34 10,38 4,34"/>
+        </g>
+        <!-- O -->
+        <g transform="translate(262,10)">
+          <polygon points="10,4 46,4 40,10 16,10"/><polygon points="8,72 14,66 38,66 44,72"/>
+          <polygon points="46,6 52,12 50,34 44,38 40,34 42,12"/><polygon points="44,42 50,46 48,68 42,74 38,70 40,46"/>
+          <polygon points="4,46 10,42 12,46 10,70 4,74 2,70"/><polygon points="6,12 12,6 16,12 14,34 10,38 4,34"/>
+        </g>
+      </g>
+    </svg>
+  </div>
+  <div class="foot">Every answer in this book assembles in Kimulator's built-in assembler and is checked by a test that
+    runs it on the emulated KIM-1. The source files are in <code>docs/workbook/answers</code>.</div>
+</section>
+
+<!-- ======================================================================= Contents -->
+<h2 id="contents">Contents</h2>
+<div class="toc">
+  <h4><a href="#start">Before you start</a></h4>
+  <h4><a href="#part1">Part 1 · First steps</a></h4>
+  <ol>
+    <li><a href="#p1"><span class="n">1</span>Hello, memory</a></li>
+    <li><a href="#p2"><span class="n">2</span>Copy cat</a></li>
+    <li><a href="#p3"><span class="n">3</span>Swap</a></li>
+    <li><a href="#p4"><span class="n">4</span>Neighbours</a></li>
+    <li><a href="#p5"><span class="n">5</span>Change it in place</a></li>
+    <li><a href="#p6"><span class="n">6</span>Add two bytes</a></li>
+    <li><a href="#p7"><span class="n">7</span>Subtract two bytes</a></li>
+    <li><a href="#p8"><span class="n">8</span>16-bit addition</a></li>
+    <li><a href="#p9"><span class="n">9</span>16-bit subtraction</a></li>
+    <li><a href="#p10"><span class="n">10</span>Times ten</a></li>
+    <li><a href="#p11"><span class="n">11</span>Increment a 24-bit number</a></li>
+    <li><a href="#p12"><span class="n">12</span>Negate a 16-bit number</a></li>
+  </ol>
+  <h4><a href="#part2">Part 2 · Decisions, loops and data</a></h4>
+  <ol>
+    <li><a href="#p13"><span class="n">13</span>The bigger of two</a></li>
+    <li><a href="#p14"><span class="n">14</span>Counting tables</a></li>
+    <li><a href="#p15"><span class="n">15</span>Sum a table</a></li>
+    <li><a href="#p16"><span class="n">16</span>Smallest and largest</a></li>
+    <li><a href="#p17"><span class="n">17</span>Masks</a></li>
+    <li><a href="#p18"><span class="n">18</span>Count the ones</a></li>
+    <li><a href="#p19"><span class="n">19</span>Multiply</a></li>
+    <li><a href="#p20"><span class="n">20</span>Byte to hex text</a></li>
+    <li><a href="#p21"><span class="n">21</span>Block copy</a></li>
+    <li><a href="#p22"><span class="n">22</span>SHOUT</a></li>
+    <li><a href="#p23"><span class="n">23</span>Decimal addition</a></li>
+    <li><a href="#p24"><span class="n">24</span>Binary to decimal</a></li>
+    <li><a href="#p25"><span class="n">25</span>Sort</a></li>
+  </ol>
+  <h4><a href="#part3">Part 3 · The KIM-1: display, keypad, timers and sound</a></h4>
+  <ol>
+    <li><a href="#p26"><span class="n">26</span>Say something</a></li>
+    <li><a href="#p27"><span class="n">27</span>Calculator entry</a></li>
+    <li><a href="#p28"><span class="n">28</span>Tally counter</a></li>
+    <li><a href="#p29"><span class="n">29</span>HELLO</a></li>
+    <li><a href="#p30"><span class="n">30</span>Marquee</a></li>
+    <li><a href="#p31"><span class="n">31</span>Read the keypad yourself</a></li>
+    <li><a href="#p32"><span class="n">32</span>Egg timer</a></li>
+    <li><a href="#p33"><span class="n">33</span>Interrupt-driven stopwatch</a></li>
+    <li><a href="#p34"><span class="n">34</span>Concert A</a></li>
+    <li><a href="#p35"><span class="n">35</span>Play a tune</a></li>
+    <li><a href="#p36"><span class="n">36</span>Keypad organ</a></li>
+  </ol>
+  <h4><a href="#part4">Part 4 · The K-1008 Visible Memory</a></h4>
+  <ol>
+    <li><a href="#p37"><span class="n">37</span>Paint the screen</a></li>
+    <li><a href="#p38"><span class="n">38</span>Checkerboard</a></li>
+    <li><a href="#p39"><span class="n">39</span>Plot a dot</a></li>
+    <li><a href="#p40"><span class="n">40</span>Draw a line</a></li>
+    <li><a href="#p41"><span class="n">41</span>Hello, world</a></li>
+    <li><a href="#p42"><span class="n">42</span>Scroll up</a></li>
+    <li><a href="#p43"><span class="n">43</span>Bouncing ball</a></li>
+    <li><a href="#p44"><span class="n">44</span>Sketch pad</a></li>
+  </ol>
+  <h4><a href="#answers">Answers</a></h4>
+  <h4><a href="#reference">Appendix · 6502 instruction summary</a></h4>
+</div>
+
+<!-- ======================================================================= Before you start -->
+<h2 id="start">Before you start</h2>
+
+<p>This workbook teaches 6502 assembly language on the KIM-1. Each part adds a few instructions or a piece of
+hardware, then gives you problems that use them. Early problems take three or four instructions. The last ones take
+a page. Try each problem before you turn to its answer at the back. There is usually more than one good solution,
+so an answer that differs from the book's can still be right.</p>
+
+<h3>Working in Kimulator</h3>
+<ul>
+  <li><b>View › Assembler</b> (Ctrl+E) opens the editor. <b>F7</b> assembles, <b>F8</b> loads the program into memory
+    and makes its start the monitor's open cell, and <b>F5</b> loads and runs it. The program starts at the
+    <code>start</code> label.</li>
+  <li><b>View › Debugger</b> (Ctrl+D) shows the registers and a memory editor. Use it to put test values into memory
+    before a run and to check the results afterwards. You can also use the keypad: <b>AD</b>, an address,
+    <b>DA</b>, a value, then <b>+</b> for the next cell.</li>
+  <li>Programs in Parts 1 and 2 end with <code>BRK</code>. With <b>Machine › Preset NMI/IRQ vectors at power-on</b>
+    turned on (the default), BRK returns to the monitor. On a real KIM-1, store <code>$00</code> at <code>$17FE</code>
+    and <code>$1C</code> at <code>$17FF</code> first, so that BRK goes to the monitor.</li>
+  <li>Programs in Parts 3 and 4 run until you stop them with <b>ST</b> (Esc) or <b>RS</b> (F12).</li>
+</ul>
+
+<h3>Conventions</h3>
+<ul>
+  <li>Programs start at <code>$0200</code>. Inputs and outputs are in zero page from <code>$10</code> up, unless a
+    problem says otherwise.</li>
+  <li>The KIM-1 has 1K of RAM, <code>$0000</code>–<code>$03FF</code>. Page 1 (<code>$0100</code>–<code>$01FF</code>)
+    is the stack and the monitor uses <code>$EF</code>–<code>$FF</code>. That leaves zero page
+    <code>$00</code>–<code>$EE</code> and <code>$0200</code>–<code>$03FF</code> for you, plus 64 bytes at
+    <code>$1780</code>–<code>$17BF</code>.</li>
+  <li>“Byte” means 8 bits. 16-bit numbers are stored <i>little-endian</i>: low byte first. “($11:$10)” means the 16-bit
+    number with its high byte at <code>$11</code> and its low byte at <code>$10</code>.</li>
+</ul>
+
+<h3>Assembler syntax</h3>
+<p>Kimulator's assembler uses modern ca65/64tass-style syntax. It knows all the KIM-1 monitor's names
+(<code>SCANDS</code>, <code>POINTL</code>, <code>SAD</code>, …), so you don't have to define them.</p>
+<pre><code>        .org $0200          <span class="c">; where the following code goes</span>
+COUNT   = 10                <span class="c">; a constant</span>
+start:  ldx #COUNT          <span class="c">; label, instruction, operand; # = immediate (the number itself)</span>
+@loop:  dex                 <span class="c">; @local labels belong to the previous normal label</span>
+        bne @loop
+        lda #&lt;MSG           <span class="c">; &lt; low byte, &gt; high byte of a 16-bit value</span>
+        lda #'A'            <span class="c">; a character's ASCII code</span>
+        and #%00001111      <span class="c">; $hex, %binary, plain decimal</span>
+        brk
+MSG:    .byte "HI", $0D, 0  <span class="c">; data: .byte, .word (16-bit, little-endian)</span>
+LEN     = * - MSG           <span class="c">; * is the current address</span></code></pre>
+
+<!-- ======================================================================= Part 1 -->
+<h2 id="part1">Part 1 · First steps</h2>
+
+<p>The 6502 has three 8-bit registers you work with directly. <b>A</b>, the accumulator, does the arithmetic.
+<b>X</b> and <b>Y</b> are index registers, used for counting and stepping through tables. The <b>program counter</b>
+(PC) holds the address of the next instruction. The <b>status register</b> (P) holds flags that instructions set as
+a side effect. The ones you need first:</p>
+<table>
+  <tr><th>Flag</th><th>Set when…</th></tr>
+  <tr><td><b>C</b> carry</td><td>an addition carries out of bit 7, or a subtraction does <i>not</i> need to borrow</td></tr>
+  <tr><td><b>Z</b> zero</td><td>the result is zero</td></tr>
+  <tr><td><b>N</b> negative</td><td>bit 7 of the result is 1</td></tr>
+</table>
+
+<p>An instruction's <b>addressing mode</b> tells the CPU where its operand is:</p>
+<table>
+  <tr><th>Mode</th><th>Example</th><th>Operand</th><th>Bytes</th></tr>
+  <tr><td>Immediate</td><td><code>LDA #$42</code></td><td>the number $42 itself</td><td>2</td></tr>
+  <tr><td>Zero page</td><td><code>LDA $10</code></td><td>the byte at $0010</td><td>2</td></tr>
+  <tr><td>Absolute</td><td><code>LDA $0300</code></td><td>the byte at $0300</td><td>3</td></tr>
+  <tr><td>Implied</td><td><code>INX</code></td><td>(built into the instruction)</td><td>1</td></tr>
+</table>
+<p>The most common beginner's mistake is to forget the <code>#</code>. <code>LDA #$10</code> loads the number 16, but
+<code>LDA $10</code> loads whatever is <i>stored at</i> address $0010.</p>
+
+<p>The instructions in Part 1:</p>
+<table>
+  <tr><th>Instructions</th><th>What they do</th></tr>
+  <tr><td><code>LDA LDX LDY</code></td><td>load a register from memory (or an immediate value); set Z and N</td></tr>
+  <tr><td><code>STA STX STY</code></td><td>store a register into memory; flags unchanged</td></tr>
+  <tr><td><code>TAX TAY TXA TYA</code></td><td>copy between A and X or Y</td></tr>
+  <tr><td><code>INX INY DEX DEY</code></td><td>add or subtract 1 in X or Y ($FF + 1 wraps to $00)</td></tr>
+  <tr><td><code>INC DEC</code></td><td>add or subtract 1 in memory</td></tr>
+  <tr><td><code>CLC SEC</code></td><td>clear or set the carry</td></tr>
+  <tr><td><code>ADC</code></td><td>A = A + operand + C. Clear the carry first for a plain addition</td></tr>
+  <tr><td><code>SBC</code></td><td>A = A − operand − (1 − C). Set the carry first for a plain subtraction</td></tr>
+  <tr><td><code>BRK</code></td><td>stop and return to the monitor</td></tr>
+</table>
+
+<div class="note"><p><b>Carry as a chain.</b> The 6502 only adds 8 bits at a time. To add bigger numbers, add the low
+bytes first, then the next bytes <i>with</i> the carry left by the step before, and so on. That is why there is no
+“add without carry” instruction: <code>CLC</code> at the start of the chain gives you one.</p></div>
+
+<div class="problem" id="p1">
+  <h3><span class="num">1</span>Hello, memory</h3>
+  <p class="new">New: <code>LDA</code><code>STA</code><code>BRK</code></p>
+  <p>Store the value <code>$42</code> in memory location <code>$10</code>.</p>
+  <p class="try">after the run, <code>$10</code> holds <code>$42</code>.</p>
+</div>
+
+<div class="problem" id="p2">
+  <h3><span class="num">2</span>Copy cat</h3>
+  <p>Copy the byte at <code>$10</code> into <code>$11</code>, <code>$12</code> and <code>$13</code>.
+  How few instructions can you do it in?</p>
+  <p class="try"><code>$10</code> = <code>$9C</code> → <code>$11</code>–<code>$13</code> = <code>$9C</code>.</p>
+</div>
+
+<div class="problem" id="p3">
+  <h3><span class="num">3</span>Swap</h3>
+  <p class="new">New: <code>LDX</code><code>LDY</code><code>STX</code><code>STY</code></p>
+  <p>Exchange the bytes at <code>$10</code> and <code>$11</code>. Don't use the accumulator.</p>
+  <p class="try"><code>$10</code> = <code>$12</code>, <code>$11</code> = <code>$AB</code> → <code>$10</code> = <code>$AB</code>, <code>$11</code> = <code>$12</code>.</p>
+</div>
+
+<div class="problem" id="p4">
+  <h3><span class="num">4</span>Neighbours</h3>
+  <p class="new">New: <code>TAX</code><code>TAY</code><code>TXA</code><code>TYA</code><code>INX</code><code>INY</code><code>DEX</code><code>DEY</code></p>
+  <p>A number N is at <code>$10</code>. Store N + 1 at <code>$11</code> and N − 1 at <code>$12</code>. Read N from memory
+  only once, into A, and copy it from there.</p>
+  <p class="try">N = <code>$41</code> → <code>$42</code>, <code>$40</code>. What do you get for N = <code>$FF</code> and N = <code>$00</code>?</p>
+</div>
+
+<div class="problem" id="p5">
+  <h3><span class="num">5</span>Change it in place</h3>
+  <p class="new">New: <code>INC</code><code>DEC</code></p>
+  <p>Add 2 to the byte at <code>$10</code> and subtract 3 from the byte at <code>$11</code>, without using A, X or Y.</p>
+  <p class="try"><code>$10</code> = <code>$FF</code>, <code>$11</code> = <code>$02</code> → <code>$01</code>, <code>$FF</code>.</p>
+</div>
+
+<div class="problem" id="p6">
+  <h3><span class="num">6</span>Add two bytes</h3>
+  <p class="new">New: <code>CLC</code><code>ADC</code></p>
+  <p>Store <code>$10</code> + <code>$11</code> at <code>$12</code>. Ignore a carry out of the result. Why does the
+  program need <code>CLC</code> even if the carry is usually clear already?</p>
+  <p class="try"><code>$12</code> + <code>$34</code> = <code>$46</code>; <code>$F0</code> + <code>$20</code> = <code>$10</code> (the carry is lost).</p>
+</div>
+
+<div class="problem" id="p7">
+  <h3><span class="num">7</span>Subtract two bytes</h3>
+  <p class="new">New: <code>SEC</code><code>SBC</code></p>
+  <p>Store <code>$10</code> − <code>$11</code> at <code>$12</code>.</p>
+  <p class="try"><code>$50</code> − <code>$20</code> = <code>$30</code>; <code>$10</code> − <code>$20</code> = <code>$F0</code>, which is −16 in two's complement.</p>
+</div>
+
+<div class="problem" id="p8">
+  <h3><span class="num">8</span>16-bit addition</h3>
+  <p>Add the 16-bit numbers ($11:$10) and ($13:$12) and store the sum in ($15:$14).</p>
+  <p class="try"><code>$12FF</code> + <code>$0001</code> = <code>$1300</code>: put <code>FF 12 01 00</code> at <code>$10</code>–<code>$13</code>
+  and expect <code>00 13</code> at <code>$14</code>–<code>$15</code>.</p>
+</div>
+
+<div class="problem" id="p9">
+  <h3><span class="num">9</span>16-bit subtraction</h3>
+  <p>Store ($11:$10) − ($13:$12) in ($15:$14).</p>
+  <p class="try"><code>$1300</code> − <code>$0001</code> = <code>$12FF</code>; <code>$0000</code> − <code>$0001</code> = <code>$FFFF</code>.</p>
+</div>
+
+<div class="problem" id="p10">
+  <h3><span class="num">10</span>Times ten</h3>
+  <p>The 6502 has no multiply instruction. N (0–25) is at <code>$10</code>. Store 10 × N at <code>$11</code> using only
+  additions. Aim for fewer than ten additions.</p>
+  <p class="hint">2N is N + N. Keep a partial result in a spare memory location.</p>
+  <p class="try">N = 25 → 250 (<code>$FA</code>).</p>
+</div>
+
+<div class="problem" id="p11">
+  <h3><span class="num">11</span>Increment a 24-bit number</h3>
+  <p>Add 1 to the 24-bit number at <code>$10</code> (low), <code>$11</code>, <code>$12</code> (high). You haven't met
+  any branch instructions yet, so the program has to run straight through.</p>
+  <p class="hint"><code>ADC #0</code> adds nothing but the carry.</p>
+  <p class="try"><code>FF FF 12</code> → <code>00 00 13</code>; <code>FF FF FF</code> → <code>00 00 00</code>.</p>
+</div>
+
+<div class="problem" id="p12">
+  <h3><span class="num">12</span>Negate a 16-bit number</h3>
+  <p>Store −($11:$10), in two's complement, in ($13:$12).</p>
+  <p class="hint">−x = 0 − x.</p>
+  <p class="try">1 → <code>$FFFF</code>; 1000 (<code>$03E8</code>) → <code>$FC18</code>; <code>$8000</code> → <code>$8000</code> (why?).</p>
+</div>
+
+<!-- ======================================================================= Part 2 -->
+<h2 id="part2">Part 2 · Decisions, loops and data</h2>
+
+<h3>Comparing and branching</h3>
+<p><code>CMP</code>, <code>CPX</code> and <code>CPY</code> subtract memory from a register without storing the result.
+They only set the flags. A <b>branch</b> then jumps if a flag is in a given state. Branches reach about 127 bytes
+forwards or backwards. For anything farther, use <code>JMP</code>.</p>
+<div class="flex">
+<table>
+  <tr><th>After <code>CMP value</code>, if A is…</th><th>then</th><th>so branch with</th></tr>
+  <tr><td>equal to value</td><td>Z = 1</td><td><code>BEQ</code> (<code>BNE</code> if not)</td></tr>
+  <tr><td>greater than or equal (unsigned)</td><td>C = 1</td><td><code>BCS</code></td></tr>
+  <tr><td>less than (unsigned)</td><td>C = 0</td><td><code>BCC</code></td></tr>
+</table>
+<table>
+  <tr><th>Branch</th><th>if</th></tr>
+  <tr><td><code>BEQ BNE</code></td><td>Z = 1 / 0</td></tr>
+  <tr><td><code>BCS BCC</code></td><td>C = 1 / 0</td></tr>
+  <tr><td><code>BMI BPL</code></td><td>N = 1 / 0</td></tr>
+  <tr><td><code>BVS BVC</code></td><td>V = 1 / 0</td></tr>
+</table>
+</div>
+<p>Loads, transfers, <code>INX</code>/<code>DEX</code>, logic and arithmetic all set Z and N, so a loop that counts
+down to zero doesn't need a compare: <code>DEX</code> followed by <code>BNE</code> repeats until X reaches 0.</p>
+
+<h3>Indexed and indirect addressing</h3>
+<table>
+  <tr><th>Mode</th><th>Example</th><th>Address used</th></tr>
+  <tr><td>Absolute,X / ,Y</td><td><code>LDA $0300,X</code></td><td>$0300 + X</td></tr>
+  <tr><td>Zero page,X</td><td><code>LDA $10,X</code></td><td>$10 + X (stays in zero page)</td></tr>
+  <tr><td>Indirect indexed</td><td><code>LDA ($10),Y</code></td><td>(the 16-bit address stored at $10/$11) + Y</td></tr>
+  <tr><td>Indexed indirect</td><td><code>LDA ($10,X)</code></td><td>the 16-bit address stored at $10 + X</td></tr>
+  <tr><td>Indirect</td><td><code>JMP ($17FE)</code></td><td>JMP only: to the address stored at $17FE/$17FF</td></tr>
+</table>
+<p><code>(zp),Y</code> is the 6502's pointer. Keep a 16-bit address in two zero-page bytes, and you can reach any
+byte in memory. X and Y only go up to 255, so for bigger blocks, step the high byte of the pointer one page at a
+time.</p>
+
+<h3>Logic and shifts</h3>
+<table>
+  <tr><th>Instruction</th><th>Effect</th><th>Typical use</th></tr>
+  <tr><td><code>AND</code></td><td>A = A and operand</td><td>clear bits (keep only the bits that are 1 in the mask)</td></tr>
+  <tr><td><code>ORA</code></td><td>A = A or operand</td><td>set bits</td></tr>
+  <tr><td><code>EOR</code></td><td>A = A exclusive-or operand</td><td>flip bits</td></tr>
+  <tr><td><code>BIT</code></td><td>Z = (A and operand) = 0; N = bit 7 and V = bit 6 of the operand</td><td>test bits without changing A</td></tr>
+  <tr><td><code>ASL</code> / <code>LSR</code></td><td>shift left / right; the bit shifted out goes to C, a 0 comes in</td><td>× 2, ÷ 2</td></tr>
+  <tr><td><code>ROL</code> / <code>ROR</code></td><td>rotate left / right through C: the old C comes in</td><td>multi-byte shifts</td></tr>
+</table>
+<p>Shifts and rotates work on A (<code>ASL A</code>) or directly on memory (<code>ASL $10</code>).</p>
+
+<h3>The stack and subroutines</h3>
+<p><code>JSR label</code> pushes the return address on the stack (page 1) and jumps, and <code>RTS</code> returns.
+<code>PHA</code>/<code>PLA</code> push and pull A, and <code>PHP</code>/<code>PLP</code> do the same for the flags.
+Every push needs a matching pull before the <code>RTS</code>. Otherwise the subroutine returns to the wrong place.</p>
+
+<h3>Decimal mode</h3>
+<p>After <code>SED</code>, <code>ADC</code> and <code>SBC</code> treat each byte as two decimal digits (BCD): $19 + $01
+= $20, and the carry means “over 99”. <code>CLD</code> switches back. The KIM-1 display shows hex digits, so a BCD
+number shows up in decimal on the display.</p>
+
+<div class="problem" id="p13">
+  <h3><span class="num">13</span>The bigger of two</h3>
+  <p class="new">New: <code>CMP</code><code>BCS</code><code>BCC</code></p>
+  <p>Store the larger of the unsigned bytes at <code>$10</code> and <code>$11</code> in <code>$12</code>.</p>
+  <p class="try">3, 9 → 9; 200, 9 → 200; 7, 7 → 7.</p>
+</div>
+
+<div class="problem" id="p14">
+  <h3><span class="num">14</span>Counting tables</h3>
+  <p class="new">New: <code>CPX</code><code>BNE</code><code>BPL</code> and absolute,X / absolute,Y addressing</p>
+  <p>Fill <code>$0300</code>–<code>$033F</code> with <code>$00, $01, …, $3F</code> and <code>$0340</code>–<code>$037F</code>
+  with <code>$3F, $3E, …, $00</code>.</p>
+  <p class="hint">For the second table, count one register down while the other counts up.</p>
+</div>
+
+<div class="problem" id="p15">
+  <h3><span class="num">15</span>Sum a table</h3>
+  <p>Add up the 32 bytes at <code>$0300</code>–<code>$031F</code>. Store the 16-bit sum at <code>$10</code> (low) and
+  <code>$11</code> (high).</p>
+  <p class="try">fill the table with <code>$FF</code> → <code>$1FE0</code> (<code>E0 1F</code>).</p>
+</div>
+
+<div class="problem" id="p16">
+  <h3><span class="num">16</span>Smallest and largest</h3>
+  <p><code>$0300</code> holds a count N (1–255), followed by N unsigned bytes. Store the smallest at <code>$10</code>
+  and the largest at <code>$11</code>.</p>
+  <p class="try"><code>05 09 08 07 0A 03</code> at <code>$0300</code> → 3 and 10.</p>
+</div>
+
+<div class="problem" id="p17">
+  <h3><span class="num">17</span>Masks</h3>
+  <p class="new">New: <code>AND</code><code>ORA</code><code>EOR</code><code>BIT</code><code>BVC</code><code>BVS</code></p>
+  <p>From the byte at <code>$10</code>, work out:</p>
+  <ul>
+    <li><code>$11</code> = its low four bits (low nibble),</li>
+    <li><code>$12</code> = the byte with bits 7 and 0 set,</li>
+    <li><code>$13</code> = the byte with every bit inverted,</li>
+    <li><code>$14</code> = 1 if bit 6 is set, otherwise 0.</li>
+  </ul>
+  <p class="try"><code>$5A</code> → <code>$0A</code>, <code>$DB</code>, <code>$A5</code>, <code>$01</code>.</p>
+</div>
+
+<div class="problem" id="p18">
+  <h3><span class="num">18</span>Count the ones</h3>
+  <p class="new">New: <code>LSR</code></p>
+  <p>Store the number of 1 bits in the byte at <code>$10</code> in <code>$11</code>, leaving <code>$10</code> unchanged.
+  Can your loop stop as soon as there are no 1 bits left?</p>
+  <p class="try"><code>$5A</code> → 4; <code>$FF</code> → 8; <code>$00</code> → 0.</p>
+</div>
+
+<div class="problem" id="p19">
+  <h3><span class="num">19</span>Multiply</h3>
+  <p class="new">New: <code>ASL</code><code>ROL</code></p>
+  <p>Multiply the unsigned bytes at <code>$10</code> and <code>$11</code> and store the 16-bit product in ($13:$12).</p>
+  <p class="hint">Do it the way you multiply on paper, but in binary. For each 1 bit in the multiplier, add the
+  multiplicand, shifted left by that bit's position. A 16-bit value doubles with <code>ASL</code> on the low byte
+  followed by <code>ROL</code> on the high byte.</p>
+  <p class="try">200 × 3 = 600 (<code>$0258</code>); 255 × 255 = <code>$FE01</code>.</p>
+</div>
+
+<div class="problem" id="p20">
+  <h3><span class="num">20</span>Byte to hex text</h3>
+  <p class="new">New: <code>JSR</code><code>RTS</code><code>PHA</code><code>PLA</code></p>
+  <p>Convert the byte at <code>$10</code> to two ASCII characters: the high hex digit at <code>$11</code>, the low one
+  at <code>$12</code>. Write a subroutine <code>NIBBLE</code> that turns a value 0–15 in A into its ASCII digit, and
+  call it twice.</p>
+  <p class="hint">ASCII <code>'0'</code>–<code>'9'</code> are <code>$30</code>–<code>$39</code>; <code>'A'</code>–<code>'F'</code>
+  are <code>$41</code>–<code>$46</code>.</p>
+  <p class="try"><code>$3C</code> → <code>$33</code>, <code>$43</code> (“3C”).</p>
+</div>
+
+<div class="problem" id="p21">
+  <h3><span class="num">21</span>Block copy</h3>
+  <p class="new">New: <code>CPY</code> and indirect indexed addressing, <code>(zp),Y</code></p>
+  <p>Copy a block of bytes. The source address is at <code>$10</code>/<code>$11</code>, the destination address at
+  <code>$12</code>/<code>$13</code> and the count (1–255) at <code>$14</code>. The two blocks don't overlap.</p>
+  <p class="try">copy 16 bytes from <code>$0300</code> to <code>$0380</code>: <code>00 03 80 03 10</code> at <code>$10</code>.</p>
+  <p class="challenge">What goes wrong if the blocks overlap and the destination is above the source? How would you fix it?</p>
+</div>
+
+<div class="problem" id="p22">
+  <h3><span class="num">22</span>SHOUT</h3>
+  <p><code>$10</code>/<code>$11</code> points to a string of ASCII characters ended by a zero byte. Change its lowercase
+  letters to uppercase in place, and store the string's length in <code>$12</code>.</p>
+  <p class="hint">Look at <code>'a'</code> (<code>$61</code>) and <code>'A'</code> (<code>$41</code>) in binary.</p>
+  <p class="try">“Hello, KIM-1!” → “HELLO, KIM-1!”, length 13. Put the string in with
+  <code>.byte "Hello, KIM-1!", 0</code>.</p>
+</div>
+
+<div class="problem" id="p23">
+  <h3><span class="num">23</span>Decimal addition</h3>
+  <p class="new">New: <code>SED</code><code>CLD</code></p>
+  <p><code>$10</code>/<code>$11</code> and <code>$12</code>/<code>$13</code> each hold a 4-digit BCD number, low byte first,
+  so 1234 is stored as <code>34 12</code>. Store their sum in <code>$14</code>/<code>$15</code> and the carry (the
+  ten-thousands digit) in <code>$16</code>.</p>
+  <p class="try">5678 + 6789 = 12467: <code>67 24</code> and <code>01</code>.</p>
+</div>
+
+<div class="problem" id="p24">
+  <h3><span class="num">24</span>Binary to decimal</h3>
+  <p>Convert the byte at <code>$10</code> (0–255) to decimal: the hundreds digit at <code>$11</code> and the tens and
+  units as packed BCD at <code>$12</code>. You will need this to show numbers on the display in decimal.</p>
+  <p class="hint">Take the bits from the top down. For each one, result = 2 × result + bit. If you do the doubling
+  with <code>ADC</code> in decimal mode, the result is already BCD.</p>
+  <p class="try">255 → <code>02</code>, <code>55</code>; 99 → <code>00</code>, <code>99</code>; 100 → <code>01</code>, <code>00</code>.</p>
+</div>
+
+<div class="problem" id="p25">
+  <h3><span class="num">25</span>Sort</h3>
+  <p><code>$0300</code> holds a count N (2–255), followed by N unsigned bytes. Sort them into ascending order, in place.</p>
+  <p class="hint">Bubble sort. Compare each neighbouring pair and swap them if they're in the wrong order. Repeat
+  until a whole pass makes no swaps.</p>
+  <p class="try"><code>05 05 03 09 01 03</code> → <code>05 01 03 03 05 09</code>.</p>
+  <p class="challenge">After each pass, the largest remaining value has reached its final place. Use that to make
+  every pass shorter than the one before.</p>
+</div>
+
+<!-- ======================================================================= Part 3 -->
+<h2 id="part3">Part 3 · The KIM-1: display, keypad, timers and sound</h2>
+
+<p>Now for the KIM-1 itself. Its two 6530 RRIOT chips each hold 1K of ROM, 64 bytes of RAM, two 8-bit I/O ports and
+an interval timer. The 6530-002 runs the keypad, the display, the teletype and the tape. The 6530-003's ports go to
+the application connector and are yours to use.</p>
+
+<div class="flex">
+<table>
+  <tr><th>Address</th><th>What is there</th></tr>
+  <tr><td><code>$0000</code>–<code>$03FF</code></td><td>1K RAM</td></tr>
+  <tr><td><code>$1700</code>–<code>$173F</code></td><td>6530-003 ports and timer (application)</td></tr>
+  <tr><td><code>$1740</code>–<code>$177F</code></td><td>6530-002 ports and timer (keypad, display)</td></tr>
+  <tr><td><code>$1780</code>–<code>$17BF</code></td><td>6530-003 RAM, free</td></tr>
+  <tr><td><code>$17C0</code>–<code>$17FF</code></td><td>6530-002 RAM; the monitor uses <code>$17E7</code> up, with the
+    vectors <code>NMIV</code> <code>$17FA</code>, <code>IRQV</code> <code>$17FE</code></td></tr>
+  <tr><td><code>$1800</code>–<code>$1BFF</code></td><td>6530-003 ROM: tape routines</td></tr>
+  <tr><td><code>$1C00</code>–<code>$1FFF</code></td><td>6530-002 ROM: the monitor</td></tr>
+</table>
+</div>
+
+<h3>Monitor routines</h3>
+<table>
+  <tr><th>Routine</th><th>Address</th><th>What it does</th></tr>
+  <tr><td><code>SCANDS</code></td><td><code>$1F1F</code></td><td>Lights the six digits once, showing <code>POINTH</code> (<code>$FB</code>),
+    <code>POINTL</code> (<code>$FA</code>) and <code>INH</code> (<code>$F9</code>) as hex. That takes about 4 ms, so call it
+    over and over. It returns with Z = 1 if no key is down and Z = 0 if one is. It changes A, X and Y.</td></tr>
+  <tr><td><code>GETKEY</code></td><td><code>$1F6A</code></td><td>Returns the code of the key that is down in A: <code>$00</code>–<code>$0F</code>
+    for 0–F, <code>$10</code> AD, <code>$11</code> DA, <code>$12</code> +, <code>$13</code> GO, <code>$14</code> PC, or
+    <code>$15</code> for none. Port A must already be an input (<code>PADD</code> = 0), which is how <code>SCANDS</code>
+    leaves it. Takes up to about 0.3 ms.</td></tr>
+  <tr><td><code>AK</code></td><td><code>$1EFE</code></td><td>Is any key down? A ≠ 0 (and Z = 0) if so.</td></tr>
+</table>
+<p>ST and RS are not keys the program can read. ST causes an NMI and RS a reset. Monitor routines expect binary
+mode, so always <code>CLD</code> before calling them.</p>
+
+<h3>The 6530 registers</h3>
+<p>Both chips have the same registers, at <code>$1700</code> (6530-003) and <code>$1740</code> (6530-002):</p>
+<table>
+  <tr><th>Offset</th><th>Write</th><th>Read</th><th>6530-003</th><th>6530-002 (monitor names)</th></tr>
+  <tr><td>+0</td><td colspan="2">port A data</td><td><code>$1700</code></td><td><code>$1740</code> <code>SAD</code></td></tr>
+  <tr><td>+1</td><td colspan="2">port A direction: 1 = output, 0 = input</td><td><code>$1701</code></td><td><code>$1741</code> <code>PADD</code></td></tr>
+  <tr><td>+2</td><td colspan="2">port B data</td><td><code>$1702</code></td><td><code>$1742</code> <code>SBD</code></td></tr>
+  <tr><td>+3</td><td colspan="2">port B direction</td><td><code>$1703</code></td><td><code>$1743</code> <code>PBDD</code></td></tr>
+  <tr><td>+4</td><td>start timer, ÷1</td><td></td><td><code>$1704</code></td><td><code>$1744</code> <code>CLK1T</code></td></tr>
+  <tr><td>+5</td><td>start timer, ÷8</td><td></td><td><code>$1705</code></td><td><code>$1745</code> <code>CLK8T</code></td></tr>
+  <tr><td>+6</td><td>start timer, ÷64</td><td>timer value</td><td><code>$1706</code></td><td><code>$1746</code> <code>CLK64T</code></td></tr>
+  <tr><td>+7</td><td>start timer, ÷1024</td><td>bit 7 = timed out</td><td><code>$1707</code></td><td><code>$1747</code> <code>CLKKT</code> / <code>CLKRDI</code></td></tr>
+  <tr><td>+$C … +$F</td><td colspan="2">as +4 … +7, with the timer interrupt enabled</td><td><code>$170C</code>–<code>$170F</code></td><td>—</td></tr>
+</table>
+
+<div class="note"><p><b>The interval timer.</b> Write a count N to one of the “start timer” addresses. The timer counts
+down once every 1, 8, 64 or 1024 clock cycles (µs on a 1 MHz KIM-1). Bit 7 of offset +7 goes to 1 when it has
+counted <b>N + 1</b> steps, so for exactly T steps, write T − 1. Writing a new count starts the timer again and
+clears the flag. Reading offset +7 doesn't clear it. After the time-out, the counter keeps going down at the
+full clock rate, so the program has to restart the timer itself.</p></div>
+
+<h3>The display</h3>
+<div class="flex">
+<figure>
+  <svg width="120" height="150" viewBox="0 0 120 150" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="11">
+    <g fill="#e9e4da" stroke="#9a3412" stroke-width="1.2">
+      <polygon points="30,10 80,10 72,18 38,18"/>
+      <polygon points="84,14 88,22 86,66 80,72 76,66 78,22"/>
+      <polygon points="80,80 86,86 84,128 78,136 74,128 76,86"/>
+      <polygon points="28,140 34,132 66,132 74,140"/>
+      <polygon points="22,86 28,80 32,86 30,128 24,136 20,128"/>
+      <polygon points="26,22 30,14 34,22 32,66 28,72 22,66"/>
+      <polygon points="30,76 36,70 70,70 76,76 70,82 36,82"/>
+    </g>
+    <g fill="#9a3412" font-weight="600" text-anchor="middle">
+      <text x="55" y="7">a</text><text x="98" y="46">b</text><text x="96" y="110">c</text>
+      <text x="51" y="150">d</text><text x="10" y="110">e</text><text x="12" y="46">f</text><text x="53" y="80">g</text>
+    </g>
+  </svg>
+  <figcaption>Segments a–g are PA0–PA6.</figcaption>
+</figure>
+<div>
+<p>Each digit's segments a–g are wired to PA0–PA6 of the 6530-002 (<code>SAD</code>). A 1 lights a segment once
+<code>PADD</code> = <code>$7F</code>. PB1–PB4 (<code>SBD</code>, with <code>PBDD</code> = <code>$1E</code>) feed a 74145
+decoder whose outputs 4–9 select digits 1–6, so write (n + 4) × 2 to <code>SBD</code> to select digit n, counting
+0–5 from the left. Only one digit is lit at a time. Show each one for about half a millisecond and go round again,
+and your eye sees them all at once.</p>
+<table>
+  <tr><th>Shows</th><th>Segments</th><th>Byte</th><th>Shows</th><th>Segments</th><th>Byte</th></tr>
+  <tr><td>H</td><td>b c e f g</td><td><code>$76</code></td><td>L</td><td>d e f</td><td><code>$38</code></td></tr>
+  <tr><td>E</td><td>a d e f g</td><td><code>$79</code></td><td>0 / O</td><td>a b c d e f</td><td><code>$3F</code></td></tr>
+</table>
+</div>
+</div>
+
+<h3>The keypad</h3>
+<div class="flex">
+<table class="keypad">
+  <tr><td>C</td><td>D</td><td>E</td><td>F</td></tr>
+  <tr><td>8</td><td>9</td><td>A</td><td>B</td></tr>
+  <tr><td>4</td><td>5</td><td>6</td><td>7</td></tr>
+  <tr><td>0</td><td>1</td><td>2</td><td>3</td></tr>
+</table>
+<div>
+<p>The 23 keys form a matrix. Write the row number × 2 to <code>SBD</code>, and the 74145 pulls that row low (outputs
+0–2). With <code>PADD</code> = 0, a key that is down in that row pulls its column's port A bit to 0:</p>
+<table>
+  <tr><th>Row</th><th>PA6</th><th>PA5</th><th>PA4</th><th>PA3</th><th>PA2</th><th>PA1</th><th>PA0</th></tr>
+  <tr><td>0</td><td>0</td><td>1</td><td>2</td><td>3</td><td>4</td><td>5</td><td>6</td></tr>
+  <tr><td>1</td><td>7</td><td>8</td><td>9</td><td>A</td><td>B</td><td>C</td><td>D</td></tr>
+  <tr><td>2</td><td>E</td><td>F</td><td>AD</td><td>DA</td><td>+</td><td>GO</td><td>PC</td></tr>
+</table>
+<p>So a key's code is row × 7 + (6 − bit number). PA7 is the teletype input, not a key.</p>
+</div>
+</div>
+
+<h3>Interrupts</h3>
+<p>An IRQ makes the 6502 finish its current instruction, push PC and P on the stack, set the I flag (so it isn't
+interrupted again straight away) and jump through the vector at <code>$FFFE</code>. On the KIM-1 that vector is in
+the monitor ROM, which jumps on through <code>IRQV</code> at <code>$17FE</code>/<code>$17FF</code>, so the handler's
+address goes there. The handler saves any register it uses, deals with the cause (for the timer, it writes a new
+count, which also clears the interrupt), restores the registers and ends with <code>RTI</code>. <code>RTI</code>
+restores P and PC. <code>SEI</code> and <code>CLI</code> turn interrupts off and on. <code>BRK</code> uses the same
+vector.</p>
+<p>The 6530-003 timer's interrupt comes out on its PB7 pin. On a real KIM-1 you wire PB7 to the IRQ line yourself.
+In Kimulator, turn on <b>Machine › Timer IRQ jumper</b>.</p>
+
+<h3>Sound</h3>
+<p>The KIM-1 has no speaker. People connected an amplifier to a port pin and switched it on and off fast enough to be
+heard. A square wave of frequency f flips the pin every 1/(2f) seconds. In Kimulator, pick
+<b>Machine › Sound › Application port PA0</b> to hear PA0 of the 6530-003.</p>
+<table>
+  <tr><th>Note</th><th>C4</th><th>D4</th><th>E4</th><th>F4</th><th>G4</th><th>A4</th><th>B4</th><th>C5</th></tr>
+  <tr><td>Hz</td><td>261.63</td><td>293.66</td><td>329.63</td><td>349.23</td><td>392.00</td><td>440.00</td><td>493.88</td><td>523.25</td></tr>
+  <tr><th>Note</th><th>D5</th><th>E5</th><th>F5</th><th>G5</th><th>A5</th><th>B5</th><th>C6</th><th>D6</th></tr>
+  <tr><td>Hz</td><td>587.33</td><td>659.26</td><td>698.46</td><td>783.99</td><td>880.00</td><td>987.77</td><td>1046.50</td><td>1174.66</td></tr>
+</table>
+
+<div class="problem" id="p26">
+  <h3><span class="num">26</span>Say something</h3>
+  <p class="new">New: <code>JSR SCANDS</code>, <code>POINTH</code> <code>POINTL</code> <code>INH</code>, <code>JMP</code></p>
+  <p>Make the display show <b class="mono">C0DE 42</b> until you press ST or RS.</p>
+</div>
+
+<div class="problem" id="p27">
+  <h3><span class="num">27</span>Calculator entry</h3>
+  <p class="new">New: <code>JSR GETKEY</code></p>
+  <p>Start with <b class="mono">0000 00</b>. Each hex key (0–F) shifts the six digits one place left and appears at the
+  right, like a pocket calculator. Ignore the other keys. One press must give exactly one digit, however long the key
+  is held down.</p>
+  <p class="hint">After handling a key, keep calling <code>SCANDS</code> until it says no key is down.</p>
+  <p class="try">type 1 2 3 4 5 6 → <b class="mono">1234 56</b>.</p>
+</div>
+
+<div class="problem" id="p28">
+  <h3><span class="num">28</span>Tally counter</h3>
+  <p>Count key presses in decimal, 0000–9999, in the four address digits, and show the code of the last key pressed
+  in the data digits.</p>
+  <p class="try">press 3 eleven times, then + → <b class="mono">0012 12</b>.</p>
+</div>
+
+<div class="problem" id="p29">
+  <h3><span class="num">29</span>HELLO</h3>
+  <p>Show <b>HELLO</b> on the first five digits (the sixth blank) without any monitor routines. Drive the ports yourself.</p>
+  <p class="hint">Blank the segments before you switch to the next digit. Otherwise you see a faint ghost of each
+  letter on its neighbour.</p>
+</div>
+
+<div class="problem" id="p30">
+  <h3><span class="num">30</span>Marquee</h3>
+  <p>Scroll the message <b>HELLO 6502</b>, followed by two blanks, across the display from right to left, one step
+  every quarter of a second, forever. Use the 6530-003 timer, polled between passes over the digits, to time the
+  steps.</p>
+  <p class="hint">A quarter second is 250,000 µs, or about 244 steps of the ÷1024 timer.</p>
+</div>
+
+<div class="problem" id="p31">
+  <h3><span class="num">31</span>Read the keypad yourself</h3>
+  <p>Write <code>READKEY</code>, your own version of <code>GETKEY</code>. It returns the same codes, and <code>$15</code>
+  when no key is down, by scanning the rows through the ports. Test it with a main loop that shows the last key's code
+  in the data digits (use <code>SCANDS</code> for the display).</p>
+  <p class="try">press DA → <b class="mono">0000 11</b>; press 7 → <b class="mono">0000 07</b>.</p>
+</div>
+
+<div class="problem" id="p32">
+  <h3><span class="num">32</span>Egg timer</h3>
+  <p>Count down from a time in minutes and seconds, kept as two BCD bytes <code>MINS</code> and <code>SECS</code> in
+  the program. Show <b class="mono">MMSS 00</b>, and at zero stop and show <b class="mono">0000 EE</b>. Keep time in
+  quarter seconds by polling the 6530-003 timer between calls to <code>SCANDS</code>.</p>
+  <p class="hint">When the seconds go below zero in BCD, they should become 59 and the minutes should go down by one.</p>
+  <p class="challenge">Restart the timer at the end of the loop instead of as soon as the flag is set, and time a
+  minute. Why is it slower?</p>
+</div>
+
+<div class="problem" id="p33">
+  <h3><span class="num">33</span>Interrupt-driven stopwatch</h3>
+  <p class="new">New: <code>SEI</code><code>CLI</code><code>RTI</code>, <code>IRQV</code></p>
+  <p>Show <b class="mono">MMSS hh</b>: minutes, seconds and hundredths. Any key starts and stops the watch. A timer
+  interrupt every 10 ms does the counting, so the display loop only shows the time and reads keys.</p>
+  <p class="setup">Machine › Timer IRQ jumper on.</p>
+  <p class="hint">10 ms is 156.25 steps of the ÷64 timer. What happens to the D flag when the interrupt arrives while the
+  main program is in binary mode?</p>
+</div>
+
+<div class="problem" id="p34">
+  <h3><span class="num">34</span>Concert A</h3>
+  <p>Play a steady 440 Hz tone on PA0 of the application port.</p>
+  <p class="setup">Machine › Sound › Application port PA0.</p>
+  <p class="hint">Start the timer for the next half period before you flip the pin. Then the time your loop takes
+  hardly matters.</p>
+</div>
+
+<div class="problem" id="p35">
+  <h3><span class="num">35</span>Play a tune</h3>
+  <p>Play a tune from a table of (pitch, length) byte pairs. The pitch is the half period in ÷8 timer steps, with 0
+  for a rest. The length is in 1/16 s units, and 0 ends the tune. Time the pitch with the 6530-003 timer and the
+  lengths with the 6530-002 timer (<code>CLKKT</code>, <code>CLKRDI</code>). Leave the last 1/16 s of each note
+  silent so that repeated notes don't run together. Then <code>BRK</code>.</p>
+  <p class="try">the first line of <i>Twinkle, Twinkle, Little Star</i>, in quarter notes: C C G G A A G (half note),
+  F F E E D D C (half note).</p>
+</div>
+
+<div class="problem" id="p36">
+  <h3><span class="num">36</span>Keypad organ</h3>
+  <p>While a hex key is held down, play a note: key 0 is C4, and the keys go up the C major scale to D6 on key F.
+  With no key down, stay silent.</p>
+  <p class="hint"><code>GETKEY</code> takes a noticeable part of a half period. Call it while the timer is already
+  timing the current one.</p>
+</div>
+
+<!-- ======================================================================= Part 4 -->
+<h2 id="part4">Part 4 · The K-1008 Visible Memory</h2>
+
+<p>MTU's K-1008 Visible Memory is 8K of RAM that is also a picture: 320 × 200 dots on a monitor. The CPU uses it
+like any other memory, and the video circuit reads it between the CPU's accesses, so drawing never slows the
+program down. In Kimulator it is installed under <b>Machine › Expansion cards…</b>, at <code>$2000</code> by default.
+<b>View › Visible Memory display</b> (Ctrl+G) shows the screen.</p>
+
+<div class="flex">
+<table>
+  <tr><th colspan="2">Screen layout</th></tr>
+  <tr><td>Size</td><td>320 × 200 dots, 1 bit each</td></tr>
+  <tr><td>Line y</td><td>40 bytes from <code>$2000</code> + 40 × y</td></tr>
+  <tr><td>Shown</td><td><code>$2000</code>–<code>$3F3F</code> (8000 bytes)</td></tr>
+  <tr><td>Not shown</td><td><code>$3F40</code>–<code>$3FFF</code> (192 bytes)</td></tr>
+  <tr><td>In a byte</td><td>bit 7 is the leftmost dot; 1 = lit</td></tr>
+</table>
+<div>
+<p>The dot at (x, y), with (0, 0) the top-left corner, is in</p>
+<p style="text-align:center" class="mono">byte = $2000 + 40 × y + x ÷ 8&nbsp;&nbsp;&nbsp;&nbsp;bit mask = $80 &gt;&gt; (x mod 8)</p>
+<p>x goes up to 319, so it needs 9 bits: keep it as a 16-bit number. 40 × y reaches 7960, which is 16 bits too.
+The 6502 multiplies by 40 with shifts and adds: 40y = 8 × (4y + y).</p>
+</div>
+</div>
+<p>Set a dot with <code>ORA</code>, clear it with <code>AND</code> of the inverted mask, and flip it with
+<code>EOR</code>. Flipping twice restores what was there, which makes <code>EOR</code> the classic way to move
+something across a picture.</p>
+
+<div class="problem" id="p37">
+  <h3><span class="num">37</span>Paint the screen</h3>
+  <p>Fill all 8K of the Visible Memory, <code>$2000</code>–<code>$3FFF</code>, with the byte at <code>$10</code>.</p>
+  <p class="try"><code>$00</code> clears the screen, <code>$FF</code> makes it white and <code>$AA</code> draws thin
+  vertical stripes. What does <code>$F0</code> draw?</p>
+  <p class="hint">Fill whole 256-byte pages with <code>(zp),Y</code> and step the pointer's high byte.</p>
+</div>
+
+<div class="problem" id="p38">
+  <h3><span class="num">38</span>Checkerboard</h3>
+  <p>Cover the screen with 8 × 8 dot squares, alternately black and white, black in the top-left corner.</p>
+  <p class="hint">Work line by line with a pointer to the start of the line, adding 40 each time. Whether byte c of
+  line y is white depends on c and y ÷ 8.</p>
+</div>
+
+<div class="problem" id="p39">
+  <h3><span class="num">39</span>Plot a dot</h3>
+  <p>Write <code>PLOT</code>, which lights the dot at (XC, YC). XC is a 16-bit value (0–319) at <code>$30</code>/<code>$31</code>
+  and YC (0–199) is at <code>$32</code>. Use it to draw a frame around the edge of the screen and a diagonal from
+  (0, 0) to (199, 199).</p>
+  <p class="hint">A table of the eight bit masks, <code>$80</code>, <code>$40</code>, …, <code>$01</code>, indexed by
+  x mod 8, is quicker than shifting.</p>
+</div>
+
+<div class="problem" id="p40">
+  <h3><span class="num">40</span>Draw a line</h3>
+  <p>Write <code>LINE</code>, which draws a straight line from (X0, Y0) to (X1, Y1), both ends included, in any
+  direction. X0 and X1 are 16 bits and Y0 and Y1 are 8 bits. Draw a star of lines through the middle of the screen
+  to test it. Bresenham's algorithm needs only additions:</p>
+<pre><code>dx = |x1 − x0|,   sx = +1 if x0 &lt; x1, else −1
+dy = −|y1 − y0|,  sy = +1 if y0 &lt; y1, else −1
+err = dx + dy
+loop:  plot (x0, y0)
+       if x0 = x1 and y0 = y1: done
+       e2 = 2 × err
+       if e2 ≥ dy: err = err + dy;  x0 = x0 + sx
+       if e2 ≤ dx: err = err + dx;  y0 = y0 + sy</code></pre>
+  <p class="hint">All these values fit easily in 16 signed bits. To test e2 ≥ dy, subtract dy from e2 and look at bit 7
+  of the result's high byte.</p>
+</div>
+
+<div class="problem" id="p41">
+  <h3><span class="num">41</span>Hello, world</h3>
+  <p>Treat the screen as 40 columns × 25 rows of 8 × 8 dot character cells. Write <code>PUTCH</code>, which draws
+  the character in A in cell (COL, ROW) and moves COL on by one. Write <code>PRINT</code>, which draws a
+  zero-terminated string with <code>PUTCH</code>. Print “HELLO, WORLD!” in the middle of the screen and “KIM-1 6502”
+  below it.</p>
+  <p class="hint">Cell (COL, ROW) starts at byte <code>$2000</code> + 320 × ROW + COL, and its eight lines are 40 bytes
+  apart. A full ASCII font doesn't fit in the KIM's RAM, so draw glyphs for just the characters you need, 5 × 7 dots
+  in each 8 × 8 cell.</p>
+</div>
+
+<div class="problem" id="p42">
+  <h3><span class="num">42</span>Scroll up</h3>
+  <p>Move the whole picture up by one character row (8 dot lines), the way a terminal scrolls, and clear the
+  bottom row.</p>
+  <p class="hint">Count the bytes to move: it comes out to a whole number of pages. Does the order you copy in
+  matter?</p>
+</div>
+
+<div class="problem" id="p43">
+  <h3><span class="num">43</span>Bouncing ball</h3>
+  <p>Move an 8 × 8 ball around the screen, 2 dots at a time and 50 times a second, bouncing off all four edges. Draw
+  it with <code>EOR</code>, so drawing it again in the same place erases it.</p>
+  <p class="hint">At position x, each 8-dot row of the ball's shape is shifted right by x mod 8 and spread over two
+  bytes. Shift a 16-bit value, shape row : 0, right with <code>LSR</code>/<code>ROR</code>.</p>
+</div>
+
+<div class="problem" id="p44">
+  <h3><span class="num">44</span>Sketch pad</h3>
+  <p>A pen starts in the middle of a clear screen and leaves a trail of dots. While a key is held, the pen moves one
+  dot every 1/50 s: <b>9</b> up, <b>1</b> down, <b>4</b> left and <b>6</b> right. <b>0</b> clears the screen. The pen
+  stops at the edges.</p>
+  <p class="challenge">Add a pen-up/pen-down key, or diagonal moves on 8, A, 0 and 2.</p>
+</div>
+
+<!-- ======================================================================= Answers -->
+<h2 id="answers">Answers</h2>
+<p>These are the programs from <code>docs/workbook/answers</code>, without their header comments. Where an answer
+reuses a routine from an earlier one, the routine isn't printed again. The source file has it in full.</p>
+
+<div class="answer" data-file="p01-hello-memory"><h3><span class="num">1</span>Hello, memory</h3>
+  <p><code>LDA #$42</code> loads the number itself. <code>STA $10</code> is a zero-page store: 2 bytes, 3 cycles.</p></div>
+
+<div class="answer" data-file="p02-copy-cat"><h3><span class="num">2</span>Copy cat</h3>
+  <p>A store doesn't change the register, so one load serves all three stores.</p></div>
+
+<div class="answer" data-file="p03-swap"><h3><span class="num">3</span>Swap</h3>
+  <p>With two registers there's somewhere to keep both values at once, so no temporary memory is needed.</p></div>
+
+<div class="answer" data-file="p04-neighbours"><h3><span class="num">4</span>Neighbours</h3>
+  <p>Increments and decrements wrap around: N = <code>$FF</code> gives <code>$00</code> and <code>$FE</code>, and
+  N = <code>$00</code> gives <code>$01</code> and <code>$FF</code>.</p></div>
+
+<div class="answer" data-file="p05-in-place"><h3><span class="num">5</span>Change it in place</h3>
+  <p><code>INC</code> and <code>DEC</code> read, change and write memory in one instruction, without touching a
+  register.</p></div>
+
+<div class="answer" data-file="p06-add"><h3><span class="num">6</span>Add two bytes</h3>
+  <p><code>ADC</code> always adds the carry. Whatever ran before your program, the monitor included, may have left it
+  set, and then the sum would be one too big.</p></div>
+
+<div class="answer" data-file="p07-subtract"><h3><span class="num">7</span>Subtract two bytes</h3>
+  <p>For <code>SBC</code> the carry works the other way round: C = 1 means “nothing borrowed”. <code>SEC</code> first.</p></div>
+
+<div class="answer" data-file="p08-add16"><h3><span class="num">8</span>16-bit addition</h3>
+  <p>One <code>CLC</code> at the start of the chain. The high bytes then add the carry left by the low bytes.</p></div>
+
+<div class="answer" data-file="p09-sub16"><h3><span class="num">9</span>16-bit subtraction</h3>
+  <p>The same chain with <code>SEC</code>/<code>SBC</code>. A borrow out of the low byte clears the carry, which takes one
+  more off the high byte.</p></div>
+
+<div class="answer" data-file="p10-times-ten"><h3><span class="num">10</span>Times ten</h3>
+  <p>Five additions. With the shifts from Part 2 there is a shorter way: 10N = 2 × (4N + N) is three <code>ASL</code>s and one addition.</p></div>
+
+<div class="answer" data-file="p11-inc24"><h3><span class="num">11</span>Increment a 24-bit number</h3>
+  <p>The same carry chain as problem 8. <code>ADC #0</code> adds only the carry, which is 1 exactly when the byte
+  below wrapped from <code>$FF</code> to <code>$00</code>.</p></div>
+
+<div class="answer" data-file="p12-negate16"><h3><span class="num">12</span>Negate a 16-bit number</h3>
+  <p>0 − x as a 16-bit subtraction. <code>$8000</code> (−32768) has no positive partner in 16 bits, so it comes out as
+  itself.</p></div>
+
+<div class="answer" data-file="p13-bigger"><h3><span class="num">13</span>The bigger of two</h3>
+  <p>After <code>CMP</code>, C = 1 means A ≥ the operand. Only when that fails does the program load the other value.</p></div>
+
+<div class="answer" data-file="p14-tables"><h3><span class="num">14</span>Counting tables</h3>
+  <p>The first loop stops when <code>CPX</code> finds X = <code>$40</code>. The second counts X down from <code>$3F</code>
+  and stops when <code>DEX</code> wraps 0 to <code>$FF</code>, the first value with bit 7 set, so <code>BPL</code>
+  falls through.</p></div>
+
+<div class="answer" data-file="p15-sum"><h3><span class="num">15</span>Sum a table</h3>
+  <p>An 8-bit addition into the low byte, and an <code>INC</code> of the high byte whenever it carries.</p></div>
+
+<div class="answer" data-file="p16-minmax"><h3><span class="num">16</span>Smallest and largest</h3>
+  <p>Starting from the first element avoids having to choose “infinitely large” and “infinitely small” start values.</p></div>
+
+<div class="answer" data-file="p17-masks"><h3><span class="num">17</span>Masks</h3>
+  <p><code>AND</code> clears, <code>ORA</code> sets and <code>EOR</code> flips the bits that are 1 in the mask.
+  <code>BIT</code> copies bit 6 of memory into V without changing A.</p></div>
+
+<div class="answer" data-file="p18-popcount"><h3><span class="num">18</span>Count the ones</h3>
+  <p><code>LSR</code> moves bit 0 into the carry and sets Z when nothing is left in A, so the loop never runs more times
+  than it needs to. <code>INX</code> changes Z, which is why A is tested again after it.</p></div>
+
+<div class="answer" data-file="p19-multiply"><h3><span class="num">19</span>Multiply</h3>
+  <p>The multiplier is shifted right to look at one bit at a time, and the multiplicand is doubled for the next bit
+  position. The loop stops when no 1 bits are left in the multiplier.</p></div>
+
+<div class="answer" data-file="p20-hex-ascii"><h3><span class="num">20</span>Byte to hex text</h3>
+  <p><code>PHA</code>/<code>PLA</code> keep the byte while the high digit is converted. In <code>NIBBLE</code>, the
+  carry left by <code>CMP #10</code> is part of the arithmetic: for 10–15 it is set, so <code>ADC #6</code> adds 7.</p></div>
+
+<div class="answer" data-file="p21-block-copy"><h3><span class="num">21</span>Block copy</h3>
+  <p>Both pointers use the same Y. If the destination overlaps the source from above, copying upwards overwrites
+  bytes before they're copied. Copy from the top down instead, as <code>memmove</code> does.</p></div>
+
+<div class="answer" data-file="p22-shout"><h3><span class="num">22</span>SHOUT</h3>
+  <p>Lowercase and uppercase ASCII letters differ only in bit 5, but only letters may be changed, hence the range
+  check. When the loop ends, Y has counted the characters.</p></div>
+
+<div class="answer" data-file="p23-bcd-add"><h3><span class="num">23</span>Decimal addition</h3>
+  <p>Exactly problem 8 in decimal mode. <code>CLD</code> as soon as the BCD work is done: anything that runs later in
+  decimal mode, a monitor routine included, gets wrong results.</p></div>
+
+<div class="answer" data-file="p24-bin-bcd"><h3><span class="num">24</span>Binary to decimal</h3>
+  <p><code>ASL</code> takes the next bit into the carry. <code>ADC</code> of a value to itself then gives 2 × value + bit,
+  and in decimal mode that stays BCD. The carry out of the tens is added into the hundreds.</p></div>
+
+<div class="answer" data-file="p25-sort"><h3><span class="num">25</span>Sort</h3>
+  <p>For the “going further” version, keep the number of pairs to compare in memory and reduce it by one after each
+  pass. The worst case, a reversed list, needs N − 1 passes.</p></div>
+
+<div class="answer" data-file="p26-show-value"><h3><span class="num">26</span>Say something</h3>
+  <p><code>SCANDS</code> lights each digit once and returns. The display only looks steady because the loop calls it
+  again straight away.</p></div>
+
+<div class="answer" data-file="p27-hex-entry"><h3><span class="num">27</span>Calculator entry</h3>
+  <p>The 24-bit shift moves the digits left. Four shifts clear the low digit, and the new key is <code>ORA</code>'d
+  in. A real keypad also bounces for a few milliseconds, but the 4 ms that <code>SCANDS</code> takes covers that.</p></div>
+
+<div class="answer" data-file="p28-key-counter"><h3><span class="num">28</span>Tally counter</h3>
+  <p>A BCD count shows in decimal on the hex display. <code>CLD</code> before returning to <code>SCANDS</code>.</p></div>
+
+<div class="answer" data-file="p29-hello-leds"><h3><span class="num">29</span>HELLO</h3>
+  <p>This is what <code>SCANDS</code> does inside: select a digit, drive its segments, wait, move on. <code>ASL</code>
+  of a number below 128 leaves the carry clear, so the <code>ADC #8</code> needs no <code>CLC</code>.</p></div>
+
+<div class="answer" data-file="p30-marquee"><h3><span class="num">30</span>Marquee</h3>
+  <p>The timer runs by itself while the program scans the digits, and one <code>BIT</code> per pass is enough to
+  notice when it runs out. Y wraps at the end of the message, so it scrolls round forever.</p></div>
+
+<div class="answer" data-file="p31-read-keypad"><h3><span class="num">31</span>Read the keypad yourself</h3>
+  <p><code>EOR #$FF</code> turns “pulled low” into a 1, so any nonzero value means a key is down. The shifts then find
+  the column, adding one to the code for each column passed.</p></div>
+
+<div class="answer" data-file="p32-egg-timer"><h3><span class="num">32</span>Egg timer</h3>
+  <p><code>SCANDS</code> takes about 4 ms, so the flag can be up to 4 ms old when the program sees it. Restarting the
+  timer right away limits that to a small error per quarter second. If the restart comes later in the loop, every
+  delay adds up: that is why the “going further” version runs slow.</p></div>
+
+<div class="answer" data-file="p33-irq-stopwatch"><h3><span class="num">33</span>Interrupt-driven stopwatch</h3>
+  <p>The interrupt happens within a few microseconds of the time-out, however busy the main loop is. The handler can
+  safely use decimal mode: the interrupt saved P, with the main program's D flag, and <code>RTI</code> restores it.
+  155 + 1 steps of 64 µs is 9.984 ms. Add the handler's start-up time, and the watch is within about 0.1 %.</p></div>
+
+<div class="answer" data-file="p34-tone"><h3><span class="num">34</span>Concert A</h3>
+  <p>1/880 s is 1136 µs, 142 steps of the ÷8 timer. Take one off because the flag rises after N + 1 steps, and
+  two more for the time the loop takes to notice the flag and restart.</p></div>
+
+<div class="answer" data-file="p35-tune"><h3><span class="num">35</span>Play a tune</h3>
+  <p>One loop watches both timers: the pitch timer flips the pin, and the length timer counts sixteenths. This loop
+  takes longer to go round than problem 34's, so the pitch values are a little smaller.</p></div>
+
+<div class="answer" data-file="p36-organ"><h3><span class="num">36</span>Keypad organ</h3>
+  <p>The timer is started and the pin flipped before <code>GETKEY</code> runs, so reading the keypad doesn't change the
+  pitch. Even D6's half period (0.43 ms) is longer than <code>GETKEY</code> takes. <code>GETKEY</code> relies on
+  <code>PADD</code> = 0, so the program sets it, because no <code>SCANDS</code> runs here.</p></div>
+
+<div class="answer" data-file="p37-fill"><h3><span class="num">37</span>Paint the screen</h3>
+  <p>32 pages of 256 bytes. <code>$F0</code> gives vertical stripes 4 dots wide.</p></div>
+
+<div class="answer" data-file="p38-checkerboard"><h3><span class="num">38</span>Checkerboard</h3>
+  <p>Looking the byte up in a two-entry table avoids a branch. The line pointer steps by 40 with a 16-bit addition.</p></div>
+
+<div class="answer" data-file="p39-plot"><h3><span class="num">39</span>Plot a dot</h3>
+  <p>40 × y is computed as ((4y + y) × 8). x ÷ 8 shifts bit 8 of x into the result with <code>ROR</code>. The mask table
+  turns x mod 8 into the dot's bit.</p></div>
+
+<div class="answer" data-file="p40-line"><h3><span class="num">40</span>Draw a line</h3>
+  <p>sx is kept as a 16-bit <code>$0001</code> or <code>$FFFF</code>, so stepping x is an ordinary 16-bit addition.
+  Each comparison is a subtraction whose result is thrown away, all but the sign of its high byte.</p></div>
+
+<div class="answer" data-file="p41-text"><h3><span class="num">41</span>Hello, world</h3>
+  <p><code>PUTCH</code> finds the character in <code>CHARS</code>, and its position there × 8 is where its glyph starts in
+  <code>FONT</code>. The glyphs use bits 6–2 of each byte, which leaves a column of space on each side.</p></div>
+
+<div class="answer" data-file="p42-scroll"><h3><span class="num">42</span>Scroll up</h3>
+  <p>7680 bytes is exactly 30 pages. Copying upwards is safe because the destination is below the source. Each byte
+  is read before anything is written over it.</p></div>
+
+<div class="answer" data-file="p43-bounce"><h3><span class="num">43</span>Bouncing ball</h3>
+  <p>The ball is erased by drawing it again, then moved and drawn once more, all right after the frame timer runs
+  out, so it's never missing from the picture for long. The bounces are exact because every position is even.</p></div>
+
+<div class="answer" data-file="p44-sketch"><h3><span class="num">44</span>Sketch pad</h3>
+  <p>Problem 36's timing idea again. The frame timer starts before <code>GETKEY</code> and the movement, so the pen
+  moves at a steady rate whatever the loop does.</p></div>
+
+<!-- ======================================================================= Appendix -->
+<h2 id="reference">Appendix · 6502 instruction summary</h2>
+<p>Flags: N negative, V overflow, Z zero, C carry. “NZ” means the instruction sets N and Z from its result.</p>
+<div class="two">
+<table>
+  <tr><th>Instr.</th><th>Operation</th><th>Flags</th></tr>
+  <tr><td><code>ADC</code></td><td>A = A + M + C</td><td>NVZC</td></tr>
+  <tr><td><code>AND</code></td><td>A = A and M</td><td>NZ</td></tr>
+  <tr><td><code>ASL</code></td><td>C ← [7…0] ← 0</td><td>NZC</td></tr>
+  <tr><td><code>BCC</code></td><td>branch if C = 0</td><td></td></tr>
+  <tr><td><code>BCS</code></td><td>branch if C = 1</td><td></td></tr>
+  <tr><td><code>BEQ</code></td><td>branch if Z = 1</td><td></td></tr>
+  <tr><td><code>BIT</code></td><td>Z = (A and M) = 0; N = M7, V = M6</td><td>NVZ</td></tr>
+  <tr><td><code>BMI</code></td><td>branch if N = 1</td><td></td></tr>
+  <tr><td><code>BNE</code></td><td>branch if Z = 0</td><td></td></tr>
+  <tr><td><code>BPL</code></td><td>branch if N = 0</td><td></td></tr>
+  <tr><td><code>BRK</code></td><td>interrupt through IRQ vector</td><td>B, I</td></tr>
+  <tr><td><code>BVC</code></td><td>branch if V = 0</td><td></td></tr>
+  <tr><td><code>BVS</code></td><td>branch if V = 1</td><td></td></tr>
+  <tr><td><code>CLC</code></td><td>C = 0</td><td>C</td></tr>
+  <tr><td><code>CLD</code></td><td>binary mode</td><td>D</td></tr>
+  <tr><td><code>CLI</code></td><td>enable IRQ</td><td>I</td></tr>
+  <tr><td><code>CLV</code></td><td>V = 0</td><td>V</td></tr>
+  <tr><td><code>CMP</code></td><td>A − M, flags only</td><td>NZC</td></tr>
+  <tr><td><code>CPX</code></td><td>X − M, flags only</td><td>NZC</td></tr>
+  <tr><td><code>CPY</code></td><td>Y − M, flags only</td><td>NZC</td></tr>
+  <tr><td><code>DEC</code></td><td>M = M − 1</td><td>NZ</td></tr>
+  <tr><td><code>DEX</code></td><td>X = X − 1</td><td>NZ</td></tr>
+  <tr><td><code>DEY</code></td><td>Y = Y − 1</td><td>NZ</td></tr>
+  <tr><td><code>EOR</code></td><td>A = A xor M</td><td>NZ</td></tr>
+  <tr><td><code>INC</code></td><td>M = M + 1</td><td>NZ</td></tr>
+  <tr><td><code>INX</code></td><td>X = X + 1</td><td>NZ</td></tr>
+  <tr><td><code>INY</code></td><td>Y = Y + 1</td><td>NZ</td></tr>
+  <tr><td><code>JMP</code></td><td>go to address</td><td></td></tr>
+</table>
+<table>
+  <tr><th>Instr.</th><th>Operation</th><th>Flags</th></tr>
+  <tr><td><code>JSR</code></td><td>push return address − 1, go</td><td></td></tr>
+  <tr><td><code>LDA</code></td><td>A = M</td><td>NZ</td></tr>
+  <tr><td><code>LDX</code></td><td>X = M</td><td>NZ</td></tr>
+  <tr><td><code>LDY</code></td><td>Y = M</td><td>NZ</td></tr>
+  <tr><td><code>LSR</code></td><td>0 → [7…0] → C</td><td>NZC</td></tr>
+  <tr><td><code>NOP</code></td><td>nothing</td><td></td></tr>
+  <tr><td><code>ORA</code></td><td>A = A or M</td><td>NZ</td></tr>
+  <tr><td><code>PHA</code></td><td>push A</td><td></td></tr>
+  <tr><td><code>PHP</code></td><td>push P</td><td></td></tr>
+  <tr><td><code>PLA</code></td><td>pull A</td><td>NZ</td></tr>
+  <tr><td><code>PLP</code></td><td>pull P</td><td>all</td></tr>
+  <tr><td><code>ROL</code></td><td>C ← [7…0] ← C</td><td>NZC</td></tr>
+  <tr><td><code>ROR</code></td><td>C → [7…0] → C</td><td>NZC</td></tr>
+  <tr><td><code>RTI</code></td><td>pull P, pull PC</td><td>all</td></tr>
+  <tr><td><code>RTS</code></td><td>pull PC, add 1</td><td></td></tr>
+  <tr><td><code>SBC</code></td><td>A = A − M − (1 − C)</td><td>NVZC</td></tr>
+  <tr><td><code>SEC</code></td><td>C = 1</td><td>C</td></tr>
+  <tr><td><code>SED</code></td><td>decimal mode</td><td>D</td></tr>
+  <tr><td><code>SEI</code></td><td>disable IRQ</td><td>I</td></tr>
+  <tr><td><code>STA</code></td><td>M = A</td><td></td></tr>
+  <tr><td><code>STX</code></td><td>M = X</td><td></td></tr>
+  <tr><td><code>STY</code></td><td>M = Y</td><td></td></tr>
+  <tr><td><code>TAX</code></td><td>X = A</td><td>NZ</td></tr>
+  <tr><td><code>TAY</code></td><td>Y = A</td><td>NZ</td></tr>
+  <tr><td><code>TSX</code></td><td>X = S</td><td>NZ</td></tr>
+  <tr><td><code>TXA</code></td><td>A = X</td><td>NZ</td></tr>
+  <tr><td><code>TXS</code></td><td>S = X</td><td></td></tr>
+  <tr><td><code>TYA</code></td><td>A = Y</td><td>NZ</td></tr>
+</table>
+</div>
+
+</body>
+</html>

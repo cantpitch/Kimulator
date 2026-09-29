@@ -131,6 +131,14 @@ Details:
 - The debugger shows your program's labels, and the editor highlights the current line when execution stops.
 - Unsaved text is kept when you close the window.
 
+### Workbook
+
+[docs/workbook/kim1-workbook.pdf](docs/workbook/kim1-workbook.pdf) has 44 graded exercises with answers. They start with
+basic 6502 instructions, add the rest of the instruction set, then move on to the 6530's display, keypad, timers,
+interrupts and sound, and end with graphics on the K-1008. Every answer in `docs/workbook/answers` is assembled and
+run by the tests in `tests/Kimulator.Tests/Workbook`. To rebuild the PDF after editing `workbook.html` or an answer,
+run `python docs/workbook/build.py`, which needs Edge, Chrome or Chromium.
+
 ## Cassette and sound
 
 <p align="center"><img src="docs/screenshots/cassette.png" alt="Cassette deck recording a program" width="440"></p>
@@ -146,6 +154,9 @@ Details:
 **Machine › Sound** plays a pin through your speakers: the tape output (PB7, the pin most KIM music programs
 toggle) or application port PA0/PB0. The same menu turns the keypad click on or off and sets the volume. Audio
 goes through OpenAL Soft, which is bundled for Windows, macOS and Linux.
+
+**Machine › Timer IRQ jumper** wires the 6530-003 timer's interrupt output (PB7) to the CPU's IRQ line. KIM-1 owners
+added this jumper for interrupt-driven programs.
 
 ## Expansion cards
 
@@ -231,7 +242,8 @@ operating systems and attaches them to a GitHub release.
 | `src/Kimulator.Core` | 6502 core, opcode table, `MachineRunner` (real-time emulation thread), assembler, debugger/disassembler/symbols, expansion-card contract, paper tape / Intel HEX / WAV formats, audio sampling, teletype text buffer |
 | `src/Kimulator.Kim1` | 6530 RRIOT, KIM-1 board, KIM-2/3/4/5 and K-1008 cards, LED display model, bit-level TTY interface, cassette with PLL model, save states, embedded ROMs and monitor symbols |
 | `src/Kimulator.App` | Avalonia UI: board photo view, hotspot layout (`Assets/kim1-layout.json`), terminal, debugger, assembler, cassette, expansion and Visible Memory windows, installed-card strip, OpenAL audio, key clicks, settings |
-| `tests/Kimulator.Tests` | CPU suites, interrupt timing, headless KIM-1 keypad and TTY monitor tests, file formats, save states, cassette round trips, debugger, disassembler and assembler |
+| `tests/Kimulator.Tests` | CPU suites, interrupt timing, headless KIM-1 keypad and TTY monitor tests, file formats, save states, cassette round trips, debugger, disassembler, assembler and the workbook answers |
+| `docs/workbook` | The assembly language workbook: `workbook.html`, the answer programs and `build.py`, which prints the PDF |
 | `packaging/`, `scripts/` | macOS `Info.plist` and icon, Linux desktop entry and installer, packaging and test-data scripts |
 
 See [docs/PLAN.md](docs/PLAN.md) for the roadmap.

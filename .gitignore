@@ -487,3 +487,6 @@ test-data/
 # Packaging output
 dist/
 artifacts/
+
+# Workbook HTML written by docs/workbook/build.py --html-only
+docs/workbook/kim1-workbook.html
