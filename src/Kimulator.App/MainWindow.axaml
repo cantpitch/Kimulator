@@ -24,6 +24,7 @@
                 <Separator />
                 <MenuItem x:Name="TtyModeMenu" Header="_TTY mode (teletype jumper)" ToggleType="CheckBox" Click="OnToggleTtyMode" />
                 <MenuItem x:Name="BaudMenu" Header="_Baud rate" />
+                <MenuItem x:Name="TimerIrqMenu" Header="Timer _IRQ jumper (6530-003 PB7 to IRQ)" ToggleType="CheckBox" Click="OnToggleTimerIrq" />
                 <Separator />
                 <MenuItem Header="E_xpansion cards…" Click="OnShowExpansion" />
                 <Separator />

@@ -34,6 +34,7 @@ public sealed class EmulatorSession : IDisposable
     {
         Board = Kim1Board.CreateWithDefaultRoms();
         Board.TtyMode = TtyMode = settings.TtyMode;
+        Board.Riot003TimerIrqJumper = settings.TimerIrqJumper;
         Board.Tty.BaudRate = settings.BaudRate;
         Board.Tty.CharacterReceived += _ttyOutput.Enqueue;
         PresetInterruptVectors = settings.PresetInterruptVectors;
@@ -259,6 +260,8 @@ public sealed class EmulatorSession : IDisposable
 
     public void SetSingleStep(bool on) => Runner.Post(() => Board.SingleStep = on);
 
+    public void SetTimerIrqJumper(bool on) => Runner.Post(() => Board.Riot003TimerIrqJumper = on);
+
     /// <summary>Moves the TTY/KB jumper and resets, since the monitor only checks it on (re)start.</summary>
     public void SetTtyMode(bool on)
     {
@@ -319,12 +322,12 @@ public sealed class EmulatorSession : IDisposable
     });
 
     /// <summary>Restores a state; returns the switch positions it contained so the UI can follow.</summary>
-    public async Task<(bool SingleStep, bool TtyMode)> LoadStateAsync(byte[] state)
+    public async Task<(bool SingleStep, bool TtyMode, bool TimerIrqJumper)> LoadStateAsync(byte[] state)
     {
         var result = await Runner.InvokeAsync(() =>
         {
             Board.LoadState(new MemoryStream(state));
-            return (Board.SingleStep, Board.TtyMode);
+            return (Board.SingleStep, Board.TtyMode, Board.Riot003TimerIrqJumper);
         });
         TtyMode = result.TtyMode;
         return result;

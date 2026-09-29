@@ -29,6 +29,9 @@ public sealed class AppSettings
 
     public bool PresetInterruptVectors { get; set; } = true;
     public bool TtyMode { get; set; }
+
+    /// <summary>Jumper from the 6530-003 timer interrupt (PB7) to the CPU's IRQ line.</summary>
+    public bool TimerIrqJumper { get; set; }
     public int BaudRate { get; set; } = 1200;
     public bool AutoCalibrateTty { get; set; } = true;
     public bool TerminalUppercase { get; set; } = true;

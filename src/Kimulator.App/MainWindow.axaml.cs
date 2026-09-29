@@ -165,6 +165,7 @@ public partial class MainWindow : Window
         PresetVectorsMenu.IsChecked = _settings.PresetInterruptVectors;
         AutoCalibrateMenu.IsChecked = _settings.AutoCalibrateTty;
         TtyModeMenu.IsChecked = _settings.TtyMode;
+        TimerIrqMenu.IsChecked = _settings.TimerIrqJumper;
 
         foreach (var item in SpeedMenu.Items.OfType<MenuItem>())
         {
@@ -382,11 +383,12 @@ public partial class MainWindow : Window
     {
         try
         {
-            var (singleStep, tty) = await _session.LoadStateAsync(state);
+            var (singleStep, tty, timerIrq) = await _session.LoadStateAsync(state);
             _board.SingleStep = singleStep;
             SingleStepMenu.IsChecked = singleStep;
             TtyModeMenu.IsChecked = tty;
             _settings.TtyMode = tty;
+            TimerIrqMenu.IsChecked = _settings.TimerIrqJumper = timerIrq;
             _terminal?.OnTtyModeChanged();
             ShowStatus($"Restored {name}.");
         }
@@ -434,6 +436,12 @@ public partial class MainWindow : Window
     }
 
     private void OnPowerCycle(object? sender, RoutedEventArgs e) => _session.PowerCycle();
+
+    private void OnToggleTimerIrq(object? sender, RoutedEventArgs e)
+    {
+        _settings.TimerIrqJumper = TimerIrqMenu.IsChecked;
+        _session.SetTimerIrqJumper(TimerIrqMenu.IsChecked);
+    }
 
     private void OnTogglePresetVectors(object? sender, RoutedEventArgs e) =>
         _session.PresetInterruptVectors = _settings.PresetInterruptVectors = PresetVectorsMenu.IsChecked;
