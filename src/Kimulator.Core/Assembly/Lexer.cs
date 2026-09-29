@@ -159,8 +159,11 @@ internal static class Lexer
         return line;
     }
 
+    // A directive or mnemonic isn't a value, so "%" after one starts a binary number (".byte %0101").
     private static bool EndsValue(List<Token> tokens) =>
-        tokens.Count > 0 && tokens[^1].Kind is TokenKind.Number or TokenKind.Identifier or TokenKind.RParen or TokenKind.AnonymousRef;
+        tokens.Count > 0 && tokens[^1] is var last
+        && (last.Kind is TokenKind.Number or TokenKind.RParen or TokenKind.AnonymousRef
+            || last.Kind == TokenKind.Identifier && !last.Text.StartsWith('.') && !Assembler.IsMnemonic(last.Text));
 
     private static bool IsDigit(char c, int radix) => radix switch
     {

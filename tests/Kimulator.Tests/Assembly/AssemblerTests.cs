@@ -70,6 +70,18 @@ public class AssemblerTests
     }
 
     [Fact]
+    public void BinaryNumberAfterDirectiveOrMnemonic()
+    {
+        var bytes = Bytes(Asm("""
+                .org $0200
+            N = 7
+                .byte %00111100, N %2
+                lda %00010000
+            """));
+        Assert.Equal(new byte[] { 0x3C, 0x01, 0xA5, 0x10 }, bytes);
+    }
+
+    [Fact]
     public void DataDirectives()
     {
         var result = Asm("""
